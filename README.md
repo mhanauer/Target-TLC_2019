@@ -306,15 +306,18 @@ results_within_target_t1_confin = results_within_target_t1_confin[,3]
 results_within_target_t1_confin = data.frame(ci = results_within_target_t1_confin)
 results_within_target_t1_confin
 
-### Add confin to 
-results_within_target_t1_sum_pars$ci = results_within_target_t1_confin$ci
-results_within_target_t1_sum_pars
 
 ### Add f^2
 results_within_target_t1_f_2 = unlist(results_within_target_t1_f_2)
 results_within_target_t1_f_2 = matrix(results_within_target_t1_f_2, ncol = 1, byrow = TRUE)
-
-results_within_target_t1_f_2 = data.frame(f_2 = results_within_target_t1_f_2$results_within_target_t1_f_2)
+results_within_target_t1_f_2 = round(results_within_target_t1_f_2, 3)
+colnames(results_within_target_t1_f_2) = "f_2"
+results_within_target_t1_f_2 = data.frame(results_within_target_t1_f_2)
 results_within_target_t1_f_2
+
+
+#### All data
+all_results_within_target_1 = data.frame(results_within_target_t1_sum_pars, ci = results_within_target_t1_confin$ci, f_2 = results_within_target_t1_f_2$f_2)
+all_results_within_target_1
 
 ```

@@ -109,7 +109,7 @@ SIS_b_1_average  = apply(SIS_b_1_average , 1, mean, na.rm = TRUE)
 
 ### SSMI
 SSMI_b_average = datAdult[,39:43]
-
+SSMI_b_average = apply(SSMI_b_average, 1, mean, na.rm = TRUE)
 ########
 # Now discharge
 #########
@@ -143,24 +143,30 @@ SIS_d_1_average  = apply(SIS_d_1_average , 1, mean, na.rm = TRUE)
 
 ### SSMI
 SSMI_d_average =datAdult[,81:85]
-
+SSMI_d_average = apply(SSMI_d_average, 1, mean, na.rm = TRUE)
 #################
 # Clean up demographics
 datAdult
 ## Gender female = 1 versus male = 0
+describe.factor(datAdult$Gender)
 female = ifelse(datAdult$Gender == 1, 0,1)
 ## Race non-white = 1 versus white = 0
+describe.factor(datAdult$Race)
 non_white = ifelse(datAdult$Race == 7,0,1)
 ### Single =1 versus non-single 0
+describe.factor(datAdult$RelationshipStatus)
 single = ifelse(datAdult$RelationshipStatus == 1, 1, 0)
 ### Sexual orientation
 ### sexual_minority != 3, hetero = 3
+describe.factor(datAdult$SexualOrientation)
 sexual_minorty = ifelse(datAdult$SexualOrientation != 3, 1, 0)
 
 ### edu high school or greater 2 or above
+describe.factor(datAdult$Edu)
 high_school_greater = ifelse(datAdult$Edu > 1, 1, 0)
 
 #### employement 2,3 employed and all else not employed
+describe.factor(datAdult$Employment)
 employed = ifelse(datAdult$Employment == 2, 1, ifelse(datAdult$Employment == 3, 1, 0))
 
 
@@ -170,8 +176,14 @@ describe.factor(treatment)
 ########## 
 # Put together Target dat set
 #################
-target_dat = data.frame(id = datAdult$ID, treatment, age = datAdult$Age, female, non_white, single, sexual_minorty, high_school_greater, employed, RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SIS_b_1_average,SSMI_b_average, RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SIS_d_1_average,SSMI_d_average)
+target_dat = data.frame(ID = datAdult$ID, treatment, age = datAdult$Age, female, non_white, single, sexual_minorty, high_school_greater, employed, RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SIS_b_1_average,SSMI_b_average, RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SIS_d_1_average,SSMI_d_average)
 
+
+###### Drop these two people they are rentries 394.1, 943.1
+target_dat = subset(target_dat, ID != 394.1)
+target_dat = subset(target_dat, ID != 943.1)
+sum(target_dat$id == 394.1)
+sum(target_dat$id == 943.1)
 ```
 ##############################
 Target Missing Data
@@ -180,7 +192,7 @@ Get percentage of missing data
 ```{r}
 library(MissMech)
 library(naniar)
-TestMCARNormality(target_dat[,10:33])
+TestMCARNormality(target_dat[,10:25])
 dim(target_dat)
 ### percentage of missing per variable
 miss_var_summary(target_dat)
@@ -200,43 +212,109 @@ des_target_dat_complete_num = t(des_target_dat_complete_num)
 
 des_target_dat_complete_num
 
-des_target_dat_complete$Factor$id = NULL
+des_target_dat_complete$Factor$ID = NULL
 des_target_dat_complete_fac = data.frame(des_target_dat_complete$Factor)
 des_target_dat_complete_fac = round(t(des_target_dat_complete_fac),3)
 des_target_dat_complete_fac
 
+############# Range
+des_target_range = apply(target_dat_complete[,10:25], 2, range)
+des_target_range = data.frame(des_target_range)
+des_target_range = t(des_target_range)
+des_target_range = round(des_target_range, 3)
+des_target_range = data.frame(des_target_range)
+des_target_range$range = paste0(des_target_range$X1, sep=",", des_target_range$X2)
+des_target_range[,1:2] = NULL
+des_target_range
+
+```
+#################
+Within Study Target
+Checking assumptions for t-tests
+Not normal 
+#########################
+```{r}
+within_target_norm = target_dat_complete[,10:25]
+log_within_target_norm = log(within_target_norm)
+results_hist_norm = list()
+results_stat_norm = list()
+log_hist_norm = list()
+apply(log_within_target_norm, 2, hist)
+apply(log_within_target_norm, 2, )
+
+for(i in 1:length(within_target_norm)){
+  results_hist_norm[[i]] = hist(within_target_norm[[i]])
+  log_hist_norm[[i]] = hist(log_within_target_norm[[i]])
+  results_stat_norm[[i]] = shapiro.test(within_target_norm[[i]])
+}
+log_hist_norm
+```
+###################
+Run robust regression with time as covariate  
+Check if R^2 changes
+```{r}
+target_dat_complete_long = reshape(target_dat_complete, varying = list(c("RAS_b_1_average","RAS_d_1_average"),c("RAS_b_2_average", "RAS_d_2_average"), c("RAS_b_3_average", "RAS_d_3_average"), c("RAS_b_5_average", "RAS_d_5_average"), c("INQ_b_1_average", "INQ_d_1_average"), c("INQ_b_2_average", "INQ_d_2_average"), c("SIS_b_1_average" ,"SIS_d_1_average"), c("SSMI_b_average", "SSMI_d_average")), direction = "long", times =c(0,1))
+
+target_dat_complete_long
+
 ```
 #################################################
-Generate t-tests for within in formate for excel
+Generate regression format for excel pasting
 #################################################
 ```{r}
+library(gvlma)
 ### Create three data sets 
-target_dat_complete_t1 = subset(target_dat_complete, treatment == 1)
-target_dat_complete_t2 = subset(target_dat_complete, treatment == 2)
-target_dat_complete_t3 = subset(target_dat_complete, treatment == 3)
+target_dat_complete_long_t1 = subset(target_dat_complete_long, treatment == 1)
+target_dat_complete_long_t2 = subset(target_dat_complete_long, treatment == 2)
+target_dat_complete_long_t3 = subset(target_dat_complete_long, treatment == 3)
+outcomes_within_target_t1 = target_dat_complete_long_t1[,11:18]
+results_within_target_t1 = list()
+results_within_target_t1_sum = list() 
+results_within_target_t1_check = list()
+results_within_target_t1_confin = list()
+results_within_target_t1_f_2 = list()
+results_within_target_t1_sum_pars = list()
+library(MASS)
 
-base_outcomes_t1 
-dis_outcomes_t1
+library(forecast)
+for(i in 1:length(outcomes_within_target_t1)){
+  results_within_target_t1[[i]] = lm(outcomes_within_target_t1[[i]] ~ time, data = target_dat_complete_long_t1)
+  results_within_target_t1_sum[[i]] = summary(results_within_target_t1[[i]])
+  results_within_target_t1_sum_pars[[i]] =results_within_target_t1_sum[[i]][[4]][2,c(1:2,4)]
+  results_within_target_t1_check[[i]] = gvlma(results_within_target_t1[[i]])
+  results_within_target_t1_confin[[i]] = confint(results_within_target_t1[[i]]) 
+  results_within_target_t1_confin[[i]] = results_within_target_t1_confin[[i]][2,]
+  results_within_target_t1_f_2[[i]] = results_within_target_t1_sum[[i]]$adj.r.squared/(1-results_within_target_t1_sum[[i]]$adj.r.squared)
+}
+summary(results_within_target_t1_check[[1]])
 
+### Figure out how to get them into a format for excel with variable, parameter estimate, se, confint, and f^2
+results_within_target_t1_sum_pars = unlist(results_within_target_t1_sum_pars)
+results_within_target_t1_sum_pars = matrix(results_within_target_t1_sum_pars, ncol= 3, byrow = TRUE)
+colnames(results_within_target_t1_sum_pars) = c("par_est", "se", "p_value")
+results_within_target_t1_sum_pars = round(results_within_target_t1_sum_pars, 3)
+results_within_target_t1_sum_pars = data.frame(results_within_target_t1_sum_pars)
+results_within_target_t1_sum_pars
+
+###### Clean up the confin 
+results_within_target_t1_confin= unlist(results_within_target_t1_confin)
+results_within_target_t1_confin = matrix(results_within_target_t1_confin, ncol = 2, byrow = TRUE)
+results_within_target_t1_confin = data.frame(results_within_target_t1_confin)
+results_within_target_t1_confin = round(results_within_target_t1_confin, 3)
+results_within_target_t1_confin$ci = paste0(results_within_target_t1_confin$X1, sep=",", results_within_target_t1_confin$X2)
+results_within_target_t1_confin = results_within_target_t1_confin[,3]
+results_within_target_t1_confin = data.frame(ci = results_within_target_t1_confin)
+results_within_target_t1_confin
+
+### Add confin to 
+results_within_target_t1_sum_pars$ci = results_within_target_t1_confin$ci
+results_within_target_t1_sum_pars
+
+### Add f^2
+results_within_target_t1_f_2 = unlist(results_within_target_t1_f_2)
+results_within_target_t1_f_2 = matrix(results_within_target_t1_f_2, ncol = 1, byrow = TRUE)
+
+results_within_target_t1_f_2 = data.frame(f_2 = results_within_target_t1_f_2$results_within_target_t1_f_2)
+results_within_target_t1_f_2
 
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

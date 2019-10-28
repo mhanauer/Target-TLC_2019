@@ -38,7 +38,7 @@ describe.factor(datPreAdult$Adult.ID)
 
 
 ## Now merge everything
-datAdult = merge(datPreAdult, datPostAdult, by = "Adult.ID", all.y = TRUE, sort = TRUE)
+datAdult = merge(datPreAdult, datPostAdult, by = "Adult.ID", sort = TRUE)
 head(datAdult)
 dim(datAdult)
 
@@ -204,28 +204,33 @@ dim(target_dat_complete)[1]
 Target Descriptives
 ###################
 ```{r}
+library(prettyR)
+library(psych)
 target_dat_complete[,c(2,4:9)] = apply(target_dat_complete[,c(2,4:9)], 2, function(x){as.factor(x)})
-des_target_dat_complete= describe(target_dat_complete)
-des_target_dat_complete_num =  data.frame(des_target_dat_complete$Numeric)
-des_target_dat_complete_num = des_target_dat_complete_num[c(1,4),]
-des_target_dat_complete_num = t(des_target_dat_complete_num)
 
-des_target_dat_complete_num
+des_target_complete_fac = target_dat_complete[,c(2,4:9)]
+des_target_complete_fac = apply(des_target_complete_fac, 2, function(x){describe.factor(x)})
+des_target_complete_fac = data.frame(des_target_complete_fac)
+des_target_complete_fac = t(des_target_complete_fac) 
+des_target_complete_fac = data.frame(round(des_target_complete_fac,3))
 
-des_target_dat_complete$Factor$ID = NULL
-des_target_dat_complete_fac = data.frame(des_target_dat_complete$Factor)
-des_target_dat_complete_fac = round(t(des_target_dat_complete_fac),3)
-des_target_dat_complete_fac
+write.csv(des_target_complete_fac, "des_target_complete_fac.csv")
 
-############# Range
-des_target_range = apply(target_dat_complete[,10:25], 2, range)
-des_target_range = data.frame(des_target_range)
-des_target_range = t(des_target_range)
-des_target_range = round(des_target_range, 3)
-des_target_range = data.frame(des_target_range)
-des_target_range$range = paste0(des_target_range$X1, sep=",", des_target_range$X2)
-des_target_range[,1:2] = NULL
-des_target_range
+des_target_complete_num = target_dat_complete[,c(3,10:25)]
+des_target_complete_num = describe(des_target_complete_num)
+des_target_complete_num = des_target_complete_num[,c(3,4,8,9)]
+des_target_complete_num = round(des_target_complete_num,3)
+range = paste0(des_target_complete_num$min, sep = ",", des_target_complete_num$max)
+range = data.frame(range)
+write.csv(range, "range.csv", row.names = FALSE)
+range = read.csv("range.csv", header = TRUE)
+range
+des_target_complete_num = data.frame(des_target_complete_num, range)
+des_target_complete_num
+des_target_complete_num$min = NULL
+des_target_complete_num$max = NULL
+
+write.csv(des_target_complete_num, "des_target_complete_num.csv")
 
 ```
 #################
@@ -236,15 +241,13 @@ Not normal
 ```{r}
 within_target_norm = target_dat_complete[,10:25]
 log_within_target_norm = log(within_target_norm)
-results_hist_norm = list()
-results_stat_norm = list()
-log_hist_norm = list()
+apply(within_target_norm, 2, hist)
 apply(log_within_target_norm, 2, hist)
-apply(log_within_target_norm, 2, )
+apply(within_target_norm, 2, shapiro.test)
+apply(log_within_target_norm, 2, shapiro.test)
+
 
 for(i in 1:length(within_target_norm)){
-  results_hist_norm[[i]] = hist(within_target_norm[[i]])
-  log_hist_norm[[i]] = hist(log_within_target_norm[[i]])
   results_stat_norm[[i]] = shapiro.test(within_target_norm[[i]])
 }
 log_hist_norm
@@ -261,6 +264,10 @@ target_dat_complete_long
 #################################################
 Generate regression format for excel pasting
 #################################################
+Small f^2 = .02
+Medium f^2 = .15
+Large = f^2 = .35
+
 ```{r}
 library(gvlma)
 ### Create three data sets 
@@ -286,6 +293,7 @@ for(i in 1:length(outcomes_within_target_t1)){
   results_within_target_t1_confin[[i]] = results_within_target_t1_confin[[i]][2,]
   results_within_target_t1_f_2[[i]] = results_within_target_t1_sum[[i]]$adj.r.squared/(1-results_within_target_t1_sum[[i]]$adj.r.squared)
 }
+
 summary(results_within_target_t1_check[[1]])
 
 ### Figure out how to get them into a format for excel with variable, parameter estimate, se, confint, and f^2

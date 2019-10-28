@@ -80,70 +80,70 @@ apply(datAdult, 2, function(x){describe.factor(x)})
 head(datAdult)
 # Subscale one: f =6, g = 7, h = 8, I = 9,  j = 10, k = 11, l = 12, m = 13, t = 20
 RAS_b_1_average = datAdult[,c(14:21, 28)]
-RAS_b_1_average = apply(RAS_b_1_average,1,mean, na.rm = TRUE)
-
+RAS_b_1_average = apply(RAS_b_1_average,1,sum)
+mean(RAS_b_1_average, na.rm = TRUE)
 # Subscale two q = 17, r= 18, s= 19
 RAS_b_2_average = datAdult[,c(25:27)]
-RAS_b_2_average = apply(RAS_b_2_average, 1, mean, na.rm = TRUE)
+RAS_b_2_average = apply(RAS_b_2_average, 1, sum)
 
 # Subscale three: a = 1, b = 2, c = 3, d= 4, e = 5
 RAS_b_3_average = datAdult[,9:13]
-RAS_b_3_average = apply(RAS_b_3_average, 1, mean, na.rm = TRUE)
+RAS_b_3_average = apply(RAS_b_3_average, 1, sum)
 
 # Subscale five: n = 14, o = 15, p = 16
 RAS_b_5_average = datAdult[,22:24]
-RAS_b_5_average = apply(RAS_b_5_average, 1, mean, na.rm = TRUE)
+RAS_b_5_average = apply(RAS_b_5_average, 1, sum)
 
 #Subscale 1 for INQ: a = 1, b = 2, c = 3, d = 4, e = 5
 INQ_b_1_average = datAdult[,29:33]
-INQ_b_1_average = apply(INQ_b_1_average, 1, mean, na.rm = TRUE)
+INQ_b_1_average = apply(INQ_b_1_average, 1, sum)
 
 #Subscale 2 for INQ: f-j: 6-10
 INQ_b_2_average = datAdult[,35:38]
-INQ_b_2_average = apply(INQ_b_2_average, 1, mean, na.rm = TRUE)
+INQ_b_2_average = apply(INQ_b_2_average, 1, sum)
 
 #Subscale 1 for SIS: a-d: 1:4
 SIS_b_1_average  = datAdult[,44:47]
-SIS_b_1_average  = apply(SIS_b_1_average , 1, mean, na.rm = TRUE)
+SIS_b_1_average  = apply(SIS_b_1_average , 1, sum)
 
 
 ### SSMI
 SSMI_b_average = datAdult[,39:43]
-SSMI_b_average = apply(SSMI_b_average, 1, mean, na.rm = TRUE)
+SSMI_b_average = apply(SSMI_b_average, 1, sum)
 ########
 # Now discharge
 #########
 # Subscale one: f =6, g = 7, h = 8, I = 9,  j = 10, k = 11, l = 12, m = 13, t = 20
 RAS_d_1_average = datAdult[,c(57:63, 70)]
-RAS_d_1_average = apply(RAS_d_1_average,1,mean, na.rm = TRUE)
-
+RAS_d_1_average = apply(RAS_d_1_average,1,sum)
+mean(RAS_d_1_average, na.rm = TRUE)
 # Subscale two q = 17, r= 18, s= 19
 RAS_d_2_average = datAdult[,c(67:69)]
-RAS_d_2_average = apply(RAS_d_2_average, 1, mean, na.rm = TRUE)
+RAS_d_2_average = apply(RAS_d_2_average, 1, sum)
 
 # Subscale three: a = 1, b = 2, c = 3, d= 4, e = 5
 RAS_d_3_average = datAdult[,51:55]
-RAS_d_3_average = apply(RAS_d_3_average, 1, mean, na.rm = TRUE)
+RAS_d_3_average = apply(RAS_d_3_average, 1, sum)
 
 # Subscale five: n = 14, o = 15, p = 16
 RAS_d_5_average = datAdult[,64:66]
-RAS_d_5_average = apply(RAS_d_5_average, 1, mean, na.rm = TRUE)
+RAS_d_5_average = apply(RAS_d_5_average, 1, sum)
 
 #Subscale 1 for INQ: a = 1, b = 2, c = 3, d = 4, e = 5
 INQ_d_1_average = datAdult[,71:75]
-INQ_d_1_average = apply(INQ_d_1_average, 1, mean, na.rm = TRUE)
+INQ_d_1_average = apply(INQ_d_1_average, 1, sum)
 
 #Subscale 2 for INQ: f-j: 6-10
 INQ_d_2_average = datAdult[,76:80]
-INQ_d_2_average = apply(INQ_d_2_average, 1, mean, na.rm = TRUE)
+INQ_d_2_average = apply(INQ_d_2_average, 1, sum)
 
 #Subscale 1 for SIS: a-d: 1:4
 SIS_d_1_average  = datAdult[,86:89]
-SIS_d_1_average  = apply(SIS_d_1_average , 1, mean, na.rm = TRUE)
+SIS_d_1_average  = apply(SIS_d_1_average , 1, sum)
 
 ### SSMI
 SSMI_d_average =datAdult[,81:85]
-SSMI_d_average = apply(SSMI_d_average, 1, mean, na.rm = TRUE)
+SSMI_d_average = apply(SSMI_d_average, 1, sum)
 #################
 # Clean up demographics
 datAdult
@@ -190,6 +190,7 @@ Target Missing Data
 Get percentage of missing data
 ##############################
 ```{r}
+write.csv(target_dat, "target_dat.csv", row.names = FALSE)
 library(MissMech)
 library(naniar)
 TestMCARNormality(target_dat[,10:25])
@@ -256,17 +257,28 @@ Check if R^2 changes
 target_dat_complete_long = reshape(target_dat_complete, varying = list(c("RAS_b_1_average","RAS_d_1_average"),c("RAS_b_2_average", "RAS_d_2_average"), c("RAS_b_3_average", "RAS_d_3_average"), c("RAS_b_5_average", "RAS_d_5_average"), c("INQ_b_1_average", "INQ_d_1_average"), c("INQ_b_2_average", "INQ_d_2_average"), c("SIS_b_1_average" ,"SIS_d_1_average"), c("SSMI_b_average", "SSMI_d_average")), direction = "long", times =c(0,1))
 
 target_dat_complete_long
+target_dat_complete_long_t1 = subset(target_dat_complete_long, treatment == 1)
+target_dat_complete_long_t2 = subset(target_dat_complete_long, treatment == 2)
+target_dat_complete_long_t3 = subset(target_dat_complete_long, treatment == 3)
 
 ```
 #################################################
 Generate regression format for excel pasting
 #################################################
 ```{r}
+#####################
+## Within tretment one target
+#############################
+######## Test results
+test_within_target_t1 = lm(RAS_b_1_average ~ time, data = target_dat_complete_long_t1)
+summary(test_within_target_t1)
+library(lme4)
+test_multilevel = lmer(RAS_b_1_average ~ time + (1| id), data = target_dat_complete_long_t1)
+summary(test_multilevel)
+target_dat_complete_long_t1$ID
+
 library(gvlma)
 ### Create three data sets 
-target_dat_complete_long_t1 = subset(target_dat_complete_long, treatment == 1)
-target_dat_complete_long_t2 = subset(target_dat_complete_long, treatment == 2)
-target_dat_complete_long_t3 = subset(target_dat_complete_long, treatment == 3)
 outcomes_within_target_t1 = target_dat_complete_long_t1[,11:18]
 results_within_target_t1 = list()
 results_within_target_t1_sum = list() 
@@ -318,6 +330,146 @@ results_within_target_t1_f_2
 
 #### All data
 all_results_within_target_1 = data.frame(results_within_target_t1_sum_pars, ci = results_within_target_t1_confin$ci, f_2 = results_within_target_t1_f_2$f_2)
-all_results_within_target_1
+write.csv(all_results_within_target_1, "all_results_within_target_1.csv", row.names = FALSE)
+
+############ 
+## Within treatment 2 target 
+###############
+sep_data_sets = list(target_dat_complete_long_t2, target_dat_complete_long_t2, target_dat_complete_long_t3)
+outcomes_within_target_t2 = target_dat_complete_long_t2[,11:18]
+results_within_target_t2 = list()
+results_within_target_t2_sum = list() 
+results_within_target_t2_check = list()
+results_within_target_t2_confin = list()
+results_within_target_t2_f_2 = list()
+results_within_target_t2_sum_pars = list()
+library(MASS)
+
+library(forecast)
+for(i in 1:length(outcomes_within_target_t2)){
+  results_within_target_t2[[i]] = lm(outcomes_within_target_t2[[i]] ~ time, data = target_dat_complete_long_t2)
+  results_within_target_t2_sum[[i]] = summary(results_within_target_t2[[i]])
+  results_within_target_t2_sum_pars[[i]] =results_within_target_t2_sum[[i]][[4]][2,c(1:2,4)]
+  results_within_target_t2_check[[i]] = gvlma(results_within_target_t2[[i]])
+  results_within_target_t2_confin[[i]] = confint(results_within_target_t2[[i]]) 
+  results_within_target_t2_confin[[i]] = results_within_target_t2_confin[[i]][2,]
+  results_within_target_t2_f_2[[i]] = results_within_target_t2_sum[[i]]$adj.r.squared/(1-results_within_target_t2_sum[[i]]$adj.r.squared)
+}
+summary(results_within_target_t2_check[[1]])
+
+### Figure out how to get them into a format for excel with variable, parameter estimate, se, confint, and f^2
+results_within_target_t2_sum_pars = unlist(results_within_target_t2_sum_pars)
+results_within_target_t2_sum_pars = matrix(results_within_target_t2_sum_pars, ncol= 3, byrow = TRUE)
+colnames(results_within_target_t2_sum_pars) = c("par_est", "se", "p_value")
+results_within_target_t2_sum_pars = round(results_within_target_t2_sum_pars, 3)
+results_within_target_t2_sum_pars = data.frame(results_within_target_t2_sum_pars)
+results_within_target_t2_sum_pars
+
+###### Clean up the confin 
+results_within_target_t2_confin= unlist(results_within_target_t2_confin)
+results_within_target_t2_confin = matrix(results_within_target_t2_confin, ncol = 2, byrow = TRUE)
+results_within_target_t2_confin = data.frame(results_within_target_t2_confin)
+results_within_target_t2_confin = round(results_within_target_t2_confin, 3)
+results_within_target_t2_confin$ci = paste0(results_within_target_t2_confin$X1, sep=",", results_within_target_t2_confin$X2)
+results_within_target_t2_confin = results_within_target_t2_confin[,3]
+results_within_target_t2_confin = data.frame(ci = results_within_target_t2_confin)
+results_within_target_t2_confin
+
+
+### Add f^2
+results_within_target_t2_f_2 = unlist(results_within_target_t2_f_2)
+results_within_target_t2_f_2 = matrix(results_within_target_t2_f_2, ncol = 1, byrow = TRUE)
+results_within_target_t2_f_2 = round(results_within_target_t2_f_2, 3)
+colnames(results_within_target_t2_f_2) = "f_2"
+results_within_target_t2_f_2 = data.frame(results_within_target_t2_f_2)
+results_within_target_t2_f_2
+
+
+#### All data
+all_results_within_target_t2 = data.frame(results_within_target_t2_sum_pars, ci = results_within_target_t2_confin$ci, f_2 = results_within_target_t2_f_2$f_2)
+all_results_within_target_t2
+
+################
+# Within treatment 3 target
+############ 
+## Within treatment 2 target 
+###############
+sep_data_sets = list(target_dat_complete_long_t3, target_dat_complete_long_t3, target_dat_complete_long_t3)
+outcomes_within_target_t3 = target_dat_complete_long_t3[,11:18]
+results_within_target_t3 = list()
+results_within_target_t3_sum = list() 
+results_within_target_t3_check = list()
+results_within_target_t3_confin = list()
+results_within_target_t3_f_2 = list()
+results_within_target_t3_sum_pars = list()
+library(MASS)
+
+library(forecast)
+for(i in 1:length(outcomes_within_target_t3)){
+  results_within_target_t3[[i]] = lm(outcomes_within_target_t3[[i]] ~ time, data = target_dat_complete_long_t3)
+  results_within_target_t3_sum[[i]] = summary(results_within_target_t3[[i]])
+  results_within_target_t3_sum_pars[[i]] =results_within_target_t3_sum[[i]][[4]][2,c(1:2,4)]
+  results_within_target_t3_check[[i]] = gvlma(results_within_target_t3[[i]])
+  results_within_target_t3_confin[[i]] = confint(results_within_target_t3[[i]]) 
+  results_within_target_t3_confin[[i]] = results_within_target_t3_confin[[i]][2,]
+  results_within_target_t3_f_2[[i]] = results_within_target_t3_sum[[i]]$adj.r.squared/(1-results_within_target_t3_sum[[i]]$adj.r.squared)
+}
+summary(results_within_target_t3_check[[1]])
+
+### Figure out how to get them into a format for excel with variable, parameter estimate, se, confint, and f^2
+results_within_target_t3_sum_pars = unlist(results_within_target_t3_sum_pars)
+results_within_target_t3_sum_pars = matrix(results_within_target_t3_sum_pars, ncol= 3, byrow = TRUE)
+colnames(results_within_target_t3_sum_pars) = c("par_est", "se", "p_value")
+results_within_target_t3_sum_pars = round(results_within_target_t3_sum_pars, 3)
+results_within_target_t3_sum_pars = data.frame(results_within_target_t3_sum_pars)
+results_within_target_t3_sum_pars
+
+###### Clean up the confin 
+results_within_target_t3_confin= unlist(results_within_target_t3_confin)
+results_within_target_t3_confin = matrix(results_within_target_t3_confin, ncol = 2, byrow = TRUE)
+results_within_target_t3_confin = data.frame(results_within_target_t3_confin)
+results_within_target_t3_confin = round(results_within_target_t3_confin, 3)
+results_within_target_t3_confin$ci = paste0(results_within_target_t3_confin$X1, sep=",", results_within_target_t3_confin$X2)
+results_within_target_t3_confin = results_within_target_t3_confin[,3]
+results_within_target_t3_confin = data.frame(ci = results_within_target_t3_confin)
+results_within_target_t3_confin
+
+
+### Add f^2
+results_within_target_t3_f_2 = unlist(results_within_target_t3_f_2)
+results_within_target_t3_f_2 = matrix(results_within_target_t3_f_2, ncol = 1, byrow = TRUE)
+results_within_target_t3_f_2 = round(results_within_target_t3_f_2, 3)
+colnames(results_within_target_t3_f_2) = "f_2"
+results_within_target_t3_f_2 = data.frame(results_within_target_t3_f_2)
+results_within_target_t3_f_2
+
+
+#### All data
+all_results_within_target_t3 = data.frame(results_within_target_t3_sum_pars, ci = results_within_target_t3_confin$ci, f_2 = results_within_target_t3_f_2$f_2)
+all_results_within_target_t3
+
 
 ```
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -35,35 +35,38 @@ colnames(datPreAdult)[colnames(datPreAdult) == "Added.V2..Thinking.of.Ways.to.Ki
 ### Need to deal with ID problems in here first
 describe.factor(datPreAdult$Adult.ID)
 
+############
+###### Drop these two people they are rentries 394.1, 943.1, 393.1, 406.1, 427.1, 451.1, 564.1, 658.1, 756.1, 1025.1,  1131.1, 1135.1, 1148.1, 1168.1, 1173.1, 1216.1, 1233.1, 1280.1
+#datPreAdult = subset(datPreAdult,Adult.ID != 394.1)
+#datPreAdult = subset(datPreAdult, Adult.ID != 943.1)
+#datPostAdult = subset(datPostAdult, Adult.ID != 394.1)
+#datPostAdult = subset(datPostAdult, Adult.ID != 943.1)
+#sum(datPreAdult$Adult.ID == 394.1)
 
-
-## Now merge everything
-datAdult = merge(datPreAdult, datPostAdult, by = "Adult.ID", all.y = TRUE, sort = TRUE)
-head(datAdult)
+### Now merge all data with baseline to assess missingness
+datAdult = merge(datPreAdult, datPostAdult, all.x = TRUE, by = "Adult.ID")
+dim(datAdult)
+dim(datPreAdult)
+### merge with treatment
+datAdult = merge(datAdult, datAdultTreat, all.x = TRUE, by = "Adult.ID")
 dim(datAdult)
 
-### Seemed to solve the problem, but check again
-describe.factor(datAdult$Adult.ID)
-
-
-head(datAdultTreat)
-
-## If you don't have a treatment you cannot be included
-datAdult = merge(datAdult, datAdultTreat, by = "Adult.ID", sort = TRUE)
-head(datAdult)
+##########
+### Three double ids need to get rid of 1272, 1280, 1131 
+datAdult = datAdult[-c(208,258,263),] 
+sum(datAdult$Adult.ID == 1272)
 dim(datAdult)
-
-### This is the actual sample size, because you cannot be included in the study if you do not have a treatment
-dim(datAdult)
-head(datAdult)
 
 colnames(datAdult) = c("ID", "Age", "Gender", "Race", "SexualOrientation", "RelationshipStatus", "Edu", "Employment", "RAS1_b", "RAS2_b", "RAS3_b", "RAS4_b", "RAS5_b", "RAS6_b", "RAS7_b", "RAS8_b", "RAS9_b", "RAS10_b", "RAS11_b", "RAS12_b", "RAS13_b", "RAS14_b", "RAS15_b", "RAS16_b", "RAS17_b", "RAS18_b", "RAS19_b", "RAS20_b", "INQ1_b", "INQ2_b", "INQ3_b", "INQ4_b", "INQ5_b", "INQ6_b", "INQ7_b", "INQ8_b", "INQ9_b", "INQ10_b", "SSMI1_b", "SSMI2_b", "SSMI3_b", "SSMI4_b", "SSMI5_b", "SIS1_b", "SIS2_b", "SIS3_b", "SIS4_b", "SIS5_b", "SIS6_b", "SIS7_b", "RAS1_d", "RAS2_d", "RAS3_d", "RAS4_d", "RAS5_d", "RAS6_d", "RAS7_d", "RAS8_d", "RAS9_d", "RAS10_d", "RAS11_d", "RAS12_d", "RAS13_d", "RAS14_d", "RAS15_d", "RAS16_d", "RAS17_d", "RAS18_d", "RAS19_d", "RAS20_d", "INQ1_d", "INQ2_d", "INQ3_d", "INQ4_d", "INQ5_d", "INQ6_d", "INQ7_d", "INQ8_d", "INQ9_d", "INQ10_d", "SSMI1_d", "SSMI2_d", "SSMI3_d", "SSMI4_d", "SSMI5_d", "SIS1_d", "SIS2_d", "SIS3_d", "SIS4_d", "SIS5_d", "SIS6_d", "SIS7_d", "Treatment")
+describe.factor(datAdult$Treatment)
 
 # Two treatments have B with space first so try and recode those as just B's
 datAdult$Treatment = ifelse(datAdult$Treatment == "A", 1, ifelse(datAdult$Treatment =="B", 2, ifelse(datAdult$Treatment == " B", 2, ifelse(datAdult$Treatment == "C", 3, datAdult$Treatment)))) 
 describe.factor(datAdult$Treatment)
 
-
+### Werid B changed to 6 so changing it back
+datAdult$Treatment = ifelse(datAdult$Treatment == 6 , 2, datAdult$Treatment)
+describe.factor(datAdult$Treatment)
 # Three items are reversed scored: f = 6, g = 7, j = 10
 datAdult$INQ6_b = 8-datAdult$INQ6_b
 datAdult$INQ7_b = 8-datAdult$INQ7_b
@@ -178,28 +181,39 @@ describe.factor(treatment)
 #################
 target_dat = data.frame(ID = datAdult$ID, treatment, age = datAdult$Age, female, non_white, single, sexual_minorty, high_school_greater, employed, RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SIS_b_1_average,SSMI_b_average, RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SIS_d_1_average,SSMI_d_average)
 
+target_dat
 
-###### Drop these two people they are rentries 394.1, 943.1
-target_dat = subset(target_dat, ID != 394.1)
-target_dat = subset(target_dat, ID != 943.1)
-sum(target_dat$id == 394.1)
-sum(target_dat$id == 943.1)
 ```
-##############################
-Target Missing Data
-Get percentage of missing data
-##############################
+##############
+Target
+Assess missing data
+#####################
 ```{r}
 library(MissMech)
 library(naniar)
-TestMCARNormality(target_dat[,10:25])
+TestMCARNormality(dat_pre_post_adult[,10:92])
 dim(target_dat)
 ### percentage of missing per variable
-miss_var_summary(target_dat)
-target_dat_complete = na.omit(target_dat)
-1- (dim(target_dat_complete)[1]/dim(target_dat)[1])
-dim(target_dat_complete)[1]
+# Get rid of Added.y almost all missing
+miss_var_summary(dat_pre_post_adult)
+miss_case_summary(dat_pre_post_adult)
+prop_miss_case(dat_pre_post_adult)
+
+dat_pre_post_adult_complete = na.omit(dat_pre_post_adult)
+1- (dim(dat_pre_post_adult_complete)[1]/dim(dat_pre_post_adult)[1])
+dim(dat_pre_post_adult_complete)[1]
+
 ```
+
+
+###################
+Target 
+Cleaning data after getting rid of those who did not follow up
+##############################
+```{r}
+
+```
+
 ####################
 Target Descriptives
 ###################

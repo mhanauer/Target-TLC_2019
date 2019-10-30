@@ -191,15 +191,15 @@ Assess missing data
 ```{r}
 library(MissMech)
 library(naniar)
-TestMCARNormality(dat_pre_post_adult[,10:92])
+#TestMCARNormality(dat_pre_post_adult[,10:92])
 dim(target_dat)
 ### percentage of missing per variable
 # Get rid of Added.y almost all missing
-miss_var_summary(dat_pre_post_adult)
-miss_case_summary(dat_pre_post_adult)
+#miss_var_summary(dat_pre_post_adult)
+#miss_case_summary(dat_pre_post_adult)
 prop_miss_case(dat_pre_post_adult)
 
-dat_pre_post_adult_complete = na.omit(dat_pre_post_adult)
+target_dat_complete = na.omit(target_dat)
 1- (dim(dat_pre_post_adult_complete)[1]/dim(dat_pre_post_adult)[1])
 dim(dat_pre_post_adult_complete)[1]
 
@@ -335,3 +335,28 @@ all_results_within_target_1 = data.frame(results_within_target_t1_sum_pars, ci =
 all_results_within_target_1
 
 ```
+Within target 1 Standardized version
+Between target 1 regular
+Between target 1 standard
+SIS variance explained version
+
+Now try compare all treatments
+```{r}
+outcomes_within_target = target_dat_complete_long[,11:18]
+
+results_within_target = list()
+results_within_target_sum = list() 
+results_within_target_t1_check = list()
+results_within_target_t1_confin = list()
+results_within_target_t1_f_2 = list()
+results_within_target_t1_sum_pars = list()
+
+for(i in 1:length(outcomes_within_target_t1)){
+  results_within_target[[i]] = lm(outcomes_within_target[[i]]~ treatment*time, data = target_dat_complete_long)
+  results_within_target_sum[[i]] = summary(results_within_target[[i]])
+  results_within_target_sum[[i]] = results_within_target_sum[[i]]$coefficients[c(5:6), c(1,2,4)]
+}
+results_within_target_sum
+```
+
+

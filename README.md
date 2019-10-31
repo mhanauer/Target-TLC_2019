@@ -195,24 +195,16 @@ library(naniar)
 dim(target_dat)
 ### percentage of missing per variable
 # Get rid of Added.y almost all missing
-#miss_var_summary(dat_pre_post_adult)
-#miss_case_summary(dat_pre_post_adult)
-prop_miss_case(dat_pre_post_adult)
-
-target_dat_complete = na.omit(target_dat)
-1- (dim(dat_pre_post_adult_complete)[1]/dim(dat_pre_post_adult)[1])
-dim(dat_pre_post_adult_complete)[1]
-
-```
+miss_var_summary(target_dat)
+miss_case_summary(target_dat)
+prop_miss_case(target_dat)
+dim(target_dat_complete)[1]
 
 
-###################
-Target 
-Cleaning data after getting rid of those who did not follow up
-##############################
-```{r}
 
 ```
+
+
 
 ####################
 Target Descriptives

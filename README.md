@@ -299,21 +299,22 @@ outcomes_b_t1 = tlc_complete_t1[13:22]
 outcomes_d_t1 = tlc_complete_t1[23:32]
 library(effsize)
 
+
 results_t1 = list()
 for(i in 1:length(outcomes_b_t1)){
   results_t1[[i]] = cohen.d(outcomes_d_t1[[i]],outcomes_b_t1[[i]], paired = TRUE)
-  results_t1[[i]] = results_t1[[i]][3:5]
+  results_t1[[i]] = results_t1[[i]][c(3,5)]
 }
 results_t1 = unlist(results_t1)
-results_t1 = matrix(results_t1, ncol= 4, byrow = TRUE)
-colnames(results_t1) = c("d", "sd", "lower", "upper")
+results_t1 = matrix(results_t1, ncol= 3, byrow = TRUE)
+colnames(results_t1) = c("d", "lower", "upper")
 results_t1 = data.frame(round(results_t1,3))
-results_t1$sig = ifelse(results_t1$lower < 0 & results_t1$upper > 0, "", "*")
-results_t1
+sig = ifelse(results_t1$lower < 0 & results_t1$upper > 0, "", "*")
+results_t1$d = paste0(results_t1$d, sig)
 
 ci_95 = paste0(results_t1$lower, sep = ",", results_t1$upper)
 results_t1 = data.frame(results_t1, ci_95)
-results_t1 = results_t1[,-c(3:4)]
+results_t1 = data.frame(d = results_t1$d, ci_95 = results_t1$ci_95)
 results_t1
 
 
@@ -326,18 +327,18 @@ library(effsize)
 results_t2 = list()
 for(i in 1:length(outcomes_b_t2)){
   results_t2[[i]] = cohen.d(outcomes_d_t2[[i]],outcomes_b_t2[[i]], paired = TRUE)
-  results_t2[[i]] = results_t2[[i]][3:5]
+  results_t2[[i]] = results_t2[[i]][c(3,5)]
 }
 results_t2 = unlist(results_t2)
-results_t2 = matrix(results_t2, ncol= 4, byrow = TRUE)
-colnames(results_t2) = c("d", "sd", "lower", "upper")
+results_t2 = matrix(results_t2, ncol= 3, byrow = TRUE)
+colnames(results_t2) = c("d", "lower", "upper")
 results_t2 = data.frame(round(results_t2,3))
-results_t2$sig = ifelse(results_t2$lower < 0 & results_t2$upper > 0, "", "*")
-results_t2
+sig = ifelse(results_t2$lower < 0 & results_t2$upper > 0, "", "*")
+results_t2$d = paste0(results_t2$d, sig)
 
 ci_95 = paste0(results_t2$lower, sep = ",", results_t2$upper)
 results_t2 = data.frame(results_t2, ci_95)
-results_t2 = results_t2[,-c(3:4)]
+results_t2 = data.frame(d = results_t2$d, ci_95 = results_t2$ci_95)
 results_t2
 
 ####### Phone + text + face to face
@@ -349,19 +350,20 @@ library(effsize)
 results_t3 = list()
 for(i in 1:length(outcomes_b_t3)){
   results_t3[[i]] = cohen.d(outcomes_d_t3[[i]],outcomes_b_t3[[i]], paired = TRUE)
-  results_t3[[i]] = results_t3[[i]][3:5]
+  results_t3[[i]] = results_t3[[i]][c(3,5)]
 }
 results_t3 = unlist(results_t3)
-results_t3 = matrix(results_t3, ncol= 4, byrow = TRUE)
-colnames(results_t3) = c("d", "sd", "lower", "upper")
+results_t3 = matrix(results_t3, ncol= 3, byrow = TRUE)
+colnames(results_t3) = c("d", "lower", "upper")
 results_t3 = data.frame(round(results_t3,3))
-results_t3$sig = ifelse(results_t3$lower < 0 & results_t3$upper > 0, "", "*")
-results_t3
+sig = ifelse(results_t3$lower < 0 & results_t3$upper > 0, "", "*")
+results_t3$d = paste0(results_t3$d, sig)
 
 ci_95 = paste0(results_t3$lower, sep = ",", results_t3$upper)
 results_t3 = data.frame(results_t3, ci_95)
-results_t3 = results_t3[,-c(3:4)]
+results_t3 = data.frame(d = results_t3$d, ci_95 = results_t3$ci_95)
 results_t3
+
 
 ########### Combine all results
 within_results_target = rbind(results_t1, results_t2, results_t3)
@@ -453,14 +455,14 @@ ci_lower = rbind(ci_1_lower, ci_2_lower)
 ci_upper_lower = round(data.frame(ci_lower, ci_upper),3)
 
 sig_target_between = ifelse(ci_upper_lower$lower < 0 & ci_upper_lower$upper > 0, "", "*")
-
+ests_ses$estimate = paste0(ests_ses$estimate,sig_target_between)
 
 
 ci_target_between = paste0(ci_upper_lower$lower, sep = ",", ci_upper_lower$upper)
 
 
 var_names_between = rep(names(outcomes_freq), 2)
-between_target_results = data.frame(var_names_between, ests_ses, ci_target_between, sig_target_between)
+between_target_results = data.frame(var_names_between, ests_ses, ci_target_between)
 between_target_results
 
 write.csv(between_target_results, "between_target_results.csv", row.names = FALSE)
@@ -476,6 +478,8 @@ SIS outcomes associated with it
 outcomes_freq
 corr.test(outcomes_freq)
 
+
+####### Suicide idea
 suicide_idea_model_0 = lm(SIS_1_diff ~ RAS_1_diff + RAS_2_diff + RAS_3_diff + INQ_1_diff + INQ_2_diff + SSMI_diff + PHQ9_diff + SIS_2_diff, data = outcomes_freq_stand)
 vif(suicide_idea_model_0)
 suicide_idea_model_sum_0 = summary(suicide_idea_model_0)
@@ -483,8 +487,9 @@ suicide_idea_model_sum_0
 round(suicide_idea_model_sum_0$coefficients,3)
 
 suicide_idea_model_1 = lm(SIS_1_diff ~ RAS_1_diff  + RAS_3_diff + INQ_1_diff + INQ_2_diff  + PHQ9_diff + SIS_2_diff, data = outcomes_freq_stand)
-summary(suicide_idea_model_1)
-
+suicide_idea_model_1_sum = summary(suicide_idea_model_1)
+suicide_idea_model_1_sum = round(suicide_idea_model_1_sum$coefficients,3)
+write.csv(suicide_idea_model_1_sum, "suicide_idea_model_1_sum.csv")
 
 checK_assump = gvlma(suicide_idea_model)
 checK_assump
@@ -492,6 +497,25 @@ par(mar=c(1,1,1,1))
 plot.gvlma(checK_assump)
 library(car)
 checkresiduals(suicide_idea_model)
+
+### Second factor
+resolved_model_0 = lm(SIS_2_diff ~ RAS_1_diff + RAS_2_diff + RAS_3_diff + INQ_1_diff + INQ_2_diff + SSMI_diff + PHQ9_diff + SIS_1_diff , data = outcomes_freq_stand)
+vif(resolved_model_0)
+resolved_model_sum_0 = summary(resolved_model_0)
+resolved_model_sum_0
+resolved_model_sum_0 = round(resolved_model_sum_0$coefficients,3)
+write.csv(resolved_model_sum_0, "resolved_model_sum_0.csv")
+
+
+resolved_model_1 = lm(SIS_2_diff ~ RAS_1_diff + RAS_2_diff + RAS_3_diff + INQ_1_diff + INQ_2_diff + SSMI_diff + PHQ9_diff , data = outcomes_freq_stand)
+summary(resolved_model_1)
+
+checK_assump = gvlma(resolved_model_0)
+checK_assump
+par(mar=c(1,1,1,1))
+plot.gvlma(checK_assump)
+library(car)
+checkresiduals(resolved_model)
 
 
 ```

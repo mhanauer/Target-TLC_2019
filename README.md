@@ -1,6 +1,5 @@
-# Target-TLC_2019
 ---
-title: "Enhanced Results"
+title: "TLC Connect 2019"
 output:
   pdf_document: default
   html_document: default
@@ -9,354 +8,926 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-#########################
-Target Data Cleaning
-##########################
-```{r, include=FALSE}
-setwd("P:/Evaluation/TN Lives Count_Writing/4_Target1_EnhancedCrisisFollow-up/3_Data & Data Analyses")
-datPreAdult = read.csv("Target1EnhancedBaseAdult.csv", header = TRUE)
-datPostAdult = read.csv("Target1EnhancedPostAdult.csv", header = TRUE)
-datAdultTreat = read.csv("AdultTreatments.csv", header = TRUE)
+##################
+Data cleaning
+###############
 
+```{r}
 library(prettyR)
+library(rstanarm)
+setwd("P:/Evaluation/TN Lives Count_Connect/Databases")
+tlc_data = read.csv("TLCConnect_10_1_2019.csv", header = TRUE, na.strings = c(-6,-7,-8,-9))
+head(tlc_data)
+## Change youth id 
+colnames(tlc_data)[1] = "YouthID"
+head(tlc_data)
 
 
-head(datPreAdult)
-# subset the variables that you want
-datPreAdult =datPreAdult[c(1, 3:4, 6,8,10, 12:13, 15:34, 36:45, 47:51, 53:59)]
-dim(datPreAdult)
-head(datPostAdult)
-datPostAdult = datPostAdult[c(1, 3:22,24:33, 35:39, 41:47)]
-head(datPostAdult)
-dim(datPostAdult)
-# Rename added variables otherwise everything else should be the same
-colnames(datPreAdult)[colnames(datPreAdult) == "Added.V2..Thinking.of.Ways.to.Kill.Self"] = "Added"   
+describe.factor(tlc_data$CSSRS1)
+describe.factor(tlc_data$CSSRS4)
+describe.factor(tlc_data$AttemptSuicide)
+head(tlc_data)
+tlc_data_analysis = tlc_data[,c(1,2,5:9, 11, 13:56, 69:112,118,124)]
+tlc_data_analysis = data.frame(tlc_data_analysis, HoursPsychotherapy = tlc_data$HoursPsychotherapy, CurrentlyEngaged  =  tlc_data$CurrentlyEngaged, ReferralsEngaged = tlc_data$ReferralsEngaged, Attend75Referrals = tlc_data$Attend75Referrals, ReferralsProvided = tlc_data$ReferralsProvided, CrisisPlan80Time = tlc_data$CrisisPlan80Time)
+head(tlc_data_analysis)
+#Check all variables are within the ranges
+apply(tlc_data_analysis, 2, function(x){describe.factor(x)})
+head(tlc_data_analysis)
 
-### Need to deal with ID problems in here first
-describe.factor(datPreAdult$Adult.ID)
+### Generate average scores
+head(tlc_data_analysis)
 
-############
-###### Drop these two people they are rentries 394.1, 943.1, 393.1, 406.1, 427.1, 451.1, 564.1, 658.1, 756.1, 1025.1,  1131.1, 1135.1, 1148.1, 1168.1, 1173.1, 1216.1, 1233.1, 1280.1
-#datPreAdult = subset(datPreAdult,Adult.ID != 394.1)
-#datPreAdult = subset(datPreAdult, Adult.ID != 943.1)
-#datPostAdult = subset(datPostAdult, Adult.ID != 394.1)
-#datPostAdult = subset(datPostAdult, Adult.ID != 943.1)
-#sum(datPreAdult$Adult.ID == 394.1)
+#f = 6, g = 7, h = 8, I = 9,  j = 10, k = 11, l = 12, m = 13, t = 20
+RAS_b_average = tlc_data_analysis[,9:28]
 
-### Now merge all data with baseline to assess missingness
-datAdult = merge(datPreAdult, datPostAdult, all.x = TRUE, by = "Adult.ID")
-dim(datAdult)
-dim(datPreAdult)
-### merge with treatment
-datAdult = merge(datAdult, datAdultTreat, all.x = TRUE, by = "Adult.ID")
-dim(datAdult)
+RAS_b_1_average = RAS_b_average[,c(6:13,20)]
+RAS_b_1_average = apply(RAS_b_1_average, 1, mean, na.rm = TRUE)
 
-##########
-### Three double ids need to get rid of 1272, 1280, 1131 
-datAdult = datAdult[-c(208,258,263),] 
-sum(datAdult$Adult.ID == 1272)
-dim(datAdult)
-
-colnames(datAdult) = c("ID", "Age", "Gender", "Race", "SexualOrientation", "RelationshipStatus", "Edu", "Employment", "RAS1_b", "RAS2_b", "RAS3_b", "RAS4_b", "RAS5_b", "RAS6_b", "RAS7_b", "RAS8_b", "RAS9_b", "RAS10_b", "RAS11_b", "RAS12_b", "RAS13_b", "RAS14_b", "RAS15_b", "RAS16_b", "RAS17_b", "RAS18_b", "RAS19_b", "RAS20_b", "INQ1_b", "INQ2_b", "INQ3_b", "INQ4_b", "INQ5_b", "INQ6_b", "INQ7_b", "INQ8_b", "INQ9_b", "INQ10_b", "SSMI1_b", "SSMI2_b", "SSMI3_b", "SSMI4_b", "SSMI5_b", "SIS1_b", "SIS2_b", "SIS3_b", "SIS4_b", "SIS5_b", "SIS6_b", "SIS7_b", "RAS1_d", "RAS2_d", "RAS3_d", "RAS4_d", "RAS5_d", "RAS6_d", "RAS7_d", "RAS8_d", "RAS9_d", "RAS10_d", "RAS11_d", "RAS12_d", "RAS13_d", "RAS14_d", "RAS15_d", "RAS16_d", "RAS17_d", "RAS18_d", "RAS19_d", "RAS20_d", "INQ1_d", "INQ2_d", "INQ3_d", "INQ4_d", "INQ5_d", "INQ6_d", "INQ7_d", "INQ8_d", "INQ9_d", "INQ10_d", "SSMI1_d", "SSMI2_d", "SSMI3_d", "SSMI4_d", "SSMI5_d", "SIS1_d", "SIS2_d", "SIS3_d", "SIS4_d", "SIS5_d", "SIS6_d", "SIS7_d", "Treatment")
-describe.factor(datAdult$Treatment)
-
-# Two treatments have B with space first so try and recode those as just B's
-datAdult$Treatment = ifelse(datAdult$Treatment == "A", 1, ifelse(datAdult$Treatment =="B", 2, ifelse(datAdult$Treatment == " B", 2, ifelse(datAdult$Treatment == "C", 3, datAdult$Treatment)))) 
-describe.factor(datAdult$Treatment)
-
-### Werid B changed to 6 so changing it back
-datAdult$Treatment = ifelse(datAdult$Treatment == 6 , 2, datAdult$Treatment)
-describe.factor(datAdult$Treatment)
-# Three items are reversed scored: f = 6, g = 7, j = 10
-datAdult$INQ6_b = 8-datAdult$INQ6_b
-datAdult$INQ7_b = 8-datAdult$INQ7_b
-datAdult$INQ10_b = 8-datAdult$INQ10_b
-
-datAdult$INQ6_d = 8-datAdult$INQ6_d
-datAdult$INQ7_d = 8-datAdult$INQ7_d
-datAdult$INQ10_d = 8-datAdult$INQ10_d
-
-#### Check for goofy answers looks good
-apply(datAdult, 2, function(x){describe.factor(x)})
-
-### Now get the means
-head(datAdult)
-# Subscale one: f =6, g = 7, h = 8, I = 9,  j = 10, k = 11, l = 12, m = 13, t = 20
-RAS_b_1_average = datAdult[,c(14:21, 28)]
-RAS_b_1_average = apply(RAS_b_1_average,1,mean, na.rm = TRUE)
-
-# Subscale two q = 17, r= 18, s= 19
-RAS_b_2_average = datAdult[,c(25:27)]
+#q=17,r=18,s=19
+RAS_b_2_average = RAS_b_average[,17:19]
 RAS_b_2_average = apply(RAS_b_2_average, 1, mean, na.rm = TRUE)
 
-# Subscale three: a = 1, b = 2, c = 3, d= 4, e = 5
-RAS_b_3_average = datAdult[,9:13]
+#a,b,c,d,e
+RAS_b_3_average = RAS_b_average[,1:5]
 RAS_b_3_average = apply(RAS_b_3_average, 1, mean, na.rm = TRUE)
-
-# Subscale five: n = 14, o = 15, p = 16
-RAS_b_5_average = datAdult[,22:24]
+#n=14,o=15,p=16
+RAS_b_5_average = RAS_b_average[,14:16]
 RAS_b_5_average = apply(RAS_b_5_average, 1, mean, na.rm = TRUE)
 
-#Subscale 1 for INQ: a = 1, b = 2, c = 3, d = 4, e = 5
-INQ_b_1_average = datAdult[,29:33]
+INQ_b_1_average = tlc_data_analysis[,29:34]
 INQ_b_1_average = apply(INQ_b_1_average, 1, mean, na.rm = TRUE)
 
-#Subscale 2 for INQ: f-j: 6-10
-INQ_b_2_average = datAdult[,35:38]
-INQ_b_2_average = apply(INQ_b_2_average, 1, mean, na.rm = TRUE)
+INQ_b_2_average = tlc_data_analysis[,35:40]
 
-#Subscale 1 for SIS: a-d: 1:4
-SIS_b_1_average  = datAdult[,44:47]
-SIS_b_1_average  = apply(SIS_b_1_average , 1, mean, na.rm = TRUE)
+#https://www.marsja.se/reverse-scoring-using-r/
+INQ_b_2_average = 8-INQ_b_2_average
+INQ_b_2_average = apply(INQ_b_2_average,1, mean, na.rm = TRUE)
+
+SSMI_b_average = tlc_data_analysis[,41:45]
+SSMI_b_average =  apply(SSMI_b_average, 1, mean, na.rm = TRUE)
 
 
-### SSMI
-SSMI_b_average = datAdult[,39:43]
-SSMI_b_average = apply(SSMI_b_average, 1, mean, na.rm = TRUE)
-########
-# Now discharge
-#########
-# Subscale one: f =6, g = 7, h = 8, I = 9,  j = 10, k = 11, l = 12, m = 13, t = 20
-RAS_d_1_average = datAdult[,c(57:63, 70)]
-RAS_d_1_average = apply(RAS_d_1_average,1,mean, na.rm = TRUE)
 
-# Subscale two q = 17, r= 18, s= 19
-RAS_d_2_average = datAdult[,c(67:69)]
+SIS_b_average = tlc_data_analysis[,46:52]
+
+#a,b,c,d
+SIS_b_1_average = SIS_b_average[,1:4]
+SIS_b_1_average = apply(SIS_b_1_average, 1, mean, na.rm =TRUE)
+
+#e,f,g
+SIS_b_2_average = SIS_b_average[,5:7]
+SIS_b_2_average = apply(SIS_b_2_average, 1, mean, na.rm =TRUE)
+
+
+
+#### Discharge
+#f = 6, g = 7, h = 8, I = 9,  j = 10, k = 11, l = 12, m = 13, t = 20
+RAS_d_average = tlc_data_analysis[53:72]
+
+RAS_d_1_average = RAS_d_average[,c(6:13,20)]
+RAS_d_1_average = apply(RAS_d_1_average, 1, mean, na.rm = TRUE)
+
+#q=17,r=18,s=19
+RAS_d_2_average = RAS_d_average[,17:19]
 RAS_d_2_average = apply(RAS_d_2_average, 1, mean, na.rm = TRUE)
 
-# Subscale three: a = 1, b = 2, c = 3, d= 4, e = 5
-RAS_d_3_average = datAdult[,51:55]
+#a,b,c,d,e
+RAS_d_3_average = RAS_d_average[,1:5]
 RAS_d_3_average = apply(RAS_d_3_average, 1, mean, na.rm = TRUE)
-
-# Subscale five: n = 14, o = 15, p = 16
-RAS_d_5_average = datAdult[,64:66]
+#n=14,o=15,p=16
+RAS_d_5_average = RAS_d_average[,14:16]
 RAS_d_5_average = apply(RAS_d_5_average, 1, mean, na.rm = TRUE)
 
-#Subscale 1 for INQ: a = 1, b = 2, c = 3, d = 4, e = 5
-INQ_d_1_average = datAdult[,71:75]
+INQ_d_1_average = tlc_data_analysis[,73:78]
 INQ_d_1_average = apply(INQ_d_1_average, 1, mean, na.rm = TRUE)
 
-#Subscale 2 for INQ: f-j: 6-10
-INQ_d_2_average = datAdult[,76:80]
+INQ_d_2_average = tlc_data_analysis[,79:84]
+INQ_d_2_average = 8-INQ_d_2_average
 INQ_d_2_average = apply(INQ_d_2_average, 1, mean, na.rm = TRUE)
 
-#Subscale 1 for SIS: a-d: 1:4
-SIS_d_1_average  = datAdult[,86:89]
-SIS_d_1_average  = apply(SIS_d_1_average , 1, mean, na.rm = TRUE)
-
-### SSMI
-SSMI_d_average =datAdult[,81:85]
-SSMI_d_average = apply(SSMI_d_average, 1, mean, na.rm = TRUE)
-#################
-# Clean up demographics
-datAdult
-## Gender female = 1 versus male = 0
-describe.factor(datAdult$Gender)
-female = ifelse(datAdult$Gender == 1, 0,1)
-## Race non-white = 1 versus white = 0
-describe.factor(datAdult$Race)
-non_white = ifelse(datAdult$Race == 7,0,1)
-### Single =1 versus non-single 0
-describe.factor(datAdult$RelationshipStatus)
-single = ifelse(datAdult$RelationshipStatus == 1, 1, 0)
-### Sexual orientation
-### sexual_minority != 3, hetero = 3
-describe.factor(datAdult$SexualOrientation)
-sexual_minorty = ifelse(datAdult$SexualOrientation != 3, 1, 0)
-
-### edu high school or greater 2 or above
-describe.factor(datAdult$Edu)
-high_school_greater = ifelse(datAdult$Edu > 1, 1, 0)
-
-#### employement 2,3 employed and all else not employed
-describe.factor(datAdult$Employment)
-employed = ifelse(datAdult$Employment == 2, 1, ifelse(datAdult$Employment == 3, 1, 0))
+SSMI_d_average = tlc_data_analysis[,85:89]
+SSMI_d_average =  apply(SSMI_d_average, 1, mean, na.rm = TRUE)
 
 
-### treatment
-treatment =  datAdult$Treatment
-describe.factor(treatment)
-########## 
-# Put together Target dat set
-#################
-target_dat = data.frame(ID = datAdult$ID, treatment, age = datAdult$Age, female, non_white, single, sexual_minorty, high_school_greater, employed, RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SIS_b_1_average,SSMI_b_average, RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SIS_d_1_average,SSMI_d_average)
+SIS_d_average = tlc_data_analysis[,90:96]
 
-target_dat
+#a,b,c,d
+SIS_d_1_average = SIS_d_average[,1:4]
+SIS_d_1_average = apply(SIS_d_1_average, 1, mean, na.rm =TRUE)
+
+#e,f,g
+SIS_d_2_average = SIS_d_average[,5:7]
+SIS_d_2_average = apply(SIS_d_2_average, 1, mean, na.rm =TRUE)
+
+### Create difference scores
+RAS_1_diff = RAS_d_1_average - RAS_b_1_average
+RAS_2_diff = RAS_d_2_average - RAS_b_2_average
+RAS_3_diff = RAS_d_3_average - RAS_b_3_average
+RAS_5_diff = RAS_d_5_average - RAS_b_5_average
+
+
+
+INQ_1_diff = INQ_d_1_average - INQ_b_1_average
+INQ_2_diff = INQ_d_2_average - INQ_b_2_average
+SSMI_diff = SSMI_d_average-SSMI_b_average
+
+SIS_1_diff = SIS_d_1_average-SIS_b_1_average
+SIS_2_diff = SIS_d_2_average-SIS_b_2_average
+
+PHQ9_diff = tlc_data_analysis$PHQ9_4 - tlc_data_analysis$PHQ9_1
+
+#### Create new data with average scores
+apply(tlc_data_analysis, 2, function(x){describe.factor(x)})
+tlc_data_analysis_average = data.frame(tlc_data_analysis[,c(2,4:8, 99:104)], RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SSMI_b_average, SIS_b_1_average, SIS_b_2_average, PHQ9_b = tlc_data_analysis$PHQ9_1,RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SSMI_d_average, SIS_d_1_average, SIS_d_2_average,PHQ9_d = tlc_data_analysis$PHQ9_4, RAS_1_diff ,RAS_2_diff, RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SSMI_diff, SIS_1_diff, SIS_2_diff, PHQ9_diff)
+
+head(tlc_data_analysis_average)
+
+tlc_data_analysis_average 
 
 ```
-##############
-Target
-Assess missing data
-#####################
+Evaluate missing data
+Get percentage of missing data for each variable
+Test missing assumption
+Get rid of missing data
 ```{r}
 library(MissMech)
 library(naniar)
-#TestMCARNormality(dat_pre_post_adult[,10:92])
-dim(target_dat)
-### percentage of missing per variable
-# Get rid of Added.y almost all missing
-#miss_var_summary(dat_pre_post_adult)
-#miss_case_summary(dat_pre_post_adult)
-prop_miss_case(dat_pre_post_adult)
+### Assessing global missing data 
+dim(tlc_data_analysis_average)
+var_missing =  miss_var_summary(tlc_data_analysis_average)
+var_missing = data.frame(var_missing)
+var_missing
+#write.csv(var_missing, "var_missing.csv", row.names = FALSE)
+full_n = dim(tlc_data_analysis_average)[1]
+############## Getting rid of anybody who doesn't have a follow-up
+quasi_itt =  apply(tlc_data_analysis_average[,33:42], 1, function(x)(sum(is.na(x))))
+quasi_itt_dat = data.frame(tlc_data_analysis_average,quasi_itt)
+### Ten variables and threshold is less than 70% 
+quasi_itt_dat = subset(quasi_itt_dat, quasi_itt < 8)
+dim(quasi_itt_dat)
+quasi_itt_n = dim(quasi_itt_dat)[1]
+### Percentage of drop for quasi itt
+quasi_itt_drop_out_rate = 1-(dim(quasi_itt_dat)[1]/dim(tlc_data_analysis_average)[1])
+quasi_itt_drop_out_rate
+quasi_itt_missing_percent = prop_miss_case(quasi_itt_dat)
+####### 
+quasi_tot_dat =  quasi_itt_dat 
+quasi_tot_dat = na.omit(quasi_tot_dat)
+quasi_tot_n = dim(quasi_tot_dat)[1]
+quasi_tot_drop_out_rate = 1-(dim(quasi_tot_dat)[1]/dim(tlc_data_analysis_average)[1])
 
-target_dat_complete = na.omit(target_dat)
-1- (dim(dat_pre_post_adult_complete)[1]/dim(dat_pre_post_adult)[1])
-dim(dat_pre_post_adult_complete)[1]
 
+### No psychotherapy or phq-9 still reject
+quasi_tot_dat =  quasi_itt_dat 
+no_phq9_psycho_dat = quasi_tot_dat
+no_phq9_psycho_dat$PHQ9_b = NULL
+no_phq9_psycho_dat$PHQ9_d = NULL
+no_phq9_psycho_dat$PHQ9_diff = NULL
+no_phq9_psycho_dat$HoursPsychotherapy = NULL
+no_phq9_psycho_dat_complete = na.omit(no_phq9_psycho_dat)
+quasi_tot_no_phq9_psycho_n = dim(no_phq9_psycho_dat_complete)[1]
+quasi_tot_no_phq9_psycho_n
+
+### Put together all results
+missing_results = data.frame(full_n, quasi_itt_n, quasi_tot_n, quasi_itt_drop_out_rate, quasi_tot_drop_out_rate, quasi_tot_no_phq9_psycho_n)
+missing_results = round(missing_results, 3)
+missing_results = t(missing_results)
+colnames(missing_results)= "n_percent"
+#### Add a column with explainations for each of them
+explain = c("Total number of participants. Anyone who assigned an ID is included.", "Total number of participants who completed at least 70% of a discharge. This data set still contains missing values.", "Total number of complete cases.", "Percentage of clients who did not complete at least 70% of discharge.", "Percentage of missing data.", "Percentage of missing data without PHQ-9 or Psychotherapy.")
+missing_results = data.frame(missing_results, explain)
+
+write.csv(missing_results, "missing_results.csv")
+
+```
+Descriptive statistics
+
+Who provided (program staff) what services (modality, type, intensity, duration), to whom (individual characteristics), in what context (system, community)?
+
+ (1) a minimum of 5,660  youth will receive all components of the enhanced post-crisis follow-up intervention by the discharge survey 
+ 
+ (3) a minimum of  5,660  youth enrolled in the enhanced post-crisis follow-up intervention will complete a safety plan and successfully implement all aspects of the plan at least 80% of the time;
+```{r}
+head(tlc_complete)
+### 1
+dim(tlc_complete)
+describe.factor(tlc_complete$TXPackageAssigned)
+describe.factor(tlc_complete$Gender)
+describe.factor(tlc_complete$HispanicLatino)
+describe.factor(tlc_complete$RaceEthnicity)
+describe.factor(tlc_complete$SexualOrientation)
+describe.factor(tlc_complete$HoursPsychotherapy)
+mean(tlc_complete$HoursPsychotherapy)
+sd(tlc_complete$HoursPsychotherapy)
+describe.factor(tlc_complete$CurrentlyEngaged)
+mean(tlc_complete$ReferralsProvided)
+sd(tlc_complete$ReferralsProvided)
+### 3
+describe.factor(tlc_complete$CrisisPlan80Time)
+head(tlc_complete)
+```
+(4) self-stigma of mental illness, thwarted belongingness, and perceived burdensomeness will each decrease 30% among youth enrolled in enhanced post-crisis follow-up by the discharge assessment; and 
+(5) scores on the suicidal ideation scale will decrease by 40% among youth enrolled in the enhanced post-crisis follow-up intervention
+(6) Scores on the recovery assessment scale will increase by 35% among youth enrolled in the enhanced post-crisis follow-up intervention
+```{r}
+head(tlc_complete)
+library(psych)
+describe_results_base =  describe(tlc_complete[,13:22])
+describe_results_base = describe_results_base[,c(3,4,8,9)]
+describe_results_base = round(describe_results_base, 3)
+range_base = paste0(describe_results_base$min, sep = ",", describe_results_base$max)
+range_base = data.frame(range_base = range_base)
+describe_results_base = data.frame(describe_results_base,range_base)
+describe_results_base
+describe_results_base = describe_results_base[,-c(3:4)] 
+describe_results_base
+write.csv(describe_results_base, "describe_results_base.csv", row.names = TRUE)
+
+#####################
+describe_results_discharge =  describe(tlc_complete[,23:32])
+describe_results_discharge = describe_results_discharge[,c(3,4,8,9)]
+describe_results_discharge = round(describe_results_discharge, 3)
+range_discharge = paste0(describe_results_discharge$min, sep = ",", describe_results_discharge$max)
+range_discharge = data.frame(range_discharge = range_discharge)
+describe_results_discharge = data.frame(describe_results_discharge,range_discharge)
+describe_results_discharge
+describe_results_discharge = describe_results_discharge[,-c(3:4)] 
+describe_results_discharge
+write.csv(describe_results_discharge, "describe_results_discharge.csv", row.names = TRUE)
+
+```
+(1)	a minimum of 5,660  youth will receive all components of the enhanced post-crisis follow-up intervention by the discharge survey 
+
+referrals will be retained at least 50% of the time among youth enrolled in the post-crisis follow-up intervention and follow-through with appointments will occur at least 75% of the time
+```{r}
+dim(tlc_complete)
+
+tlc_complete$ReferralsEngaged_binary = ifelse(tlc_complete$ReferralsEngaged > 0,1,0)
+describe.factor(tlc_complete$ReferralsEngaged_binary)
+describe.factor(tlc_complete$Attend75Referrals)
 ```
 
 
-###################
-Target 
-Cleaning data after getting rid of those who did not follow up
-##############################
+Check assumptions of normality
 ```{r}
-
-```
-
-####################
-Target Descriptives
-###################
-```{r}
-target_dat_complete[,c(2,4:9)] = apply(target_dat_complete[,c(2,4:9)], 2, function(x){as.factor(x)})
-des_target_dat_complete= describe(target_dat_complete)
-des_target_dat_complete_num =  data.frame(des_target_dat_complete$Numeric)
-des_target_dat_complete_num = des_target_dat_complete_num[c(1,4),]
-des_target_dat_complete_num = t(des_target_dat_complete_num)
-
-des_target_dat_complete_num
-
-des_target_dat_complete$Factor$ID = NULL
-des_target_dat_complete_fac = data.frame(des_target_dat_complete$Factor)
-des_target_dat_complete_fac = round(t(des_target_dat_complete_fac),3)
-des_target_dat_complete_fac
-
-############# Range
-des_target_range = apply(target_dat_complete[,10:25], 2, range)
-des_target_range = data.frame(des_target_range)
-des_target_range = t(des_target_range)
-des_target_range = round(des_target_range, 3)
-des_target_range = data.frame(des_target_range)
-des_target_range$range = paste0(des_target_range$X1, sep=",", des_target_range$X2)
-des_target_range[,1:2] = NULL
-des_target_range
-
-```
-#################
-Within Study Target
-Checking assumptions for t-tests
-Not normal 
-#########################
-```{r}
-within_target_norm = target_dat_complete[,10:25]
-log_within_target_norm = log(within_target_norm)
-results_hist_norm = list()
-results_stat_norm = list()
-log_hist_norm = list()
-apply(log_within_target_norm, 2, hist)
-apply(log_within_target_norm, 2, )
-
-for(i in 1:length(within_target_norm)){
-  results_hist_norm[[i]] = hist(within_target_norm[[i]])
-  log_hist_norm[[i]] = hist(log_within_target_norm[[i]])
-  results_stat_norm[[i]] = shapiro.test(within_target_norm[[i]])
+outcomes_tests = tlc_complete[,13:22]
+hist_results = list() 
+qq_results = list()
+shap_results = list()
+for(i in 1:length(outcomes_tests)){
+  hist_results[[i]] = hist(outcomes_tests[[i]])
+  qq_results[[i]] = qqnorm(outcomes_tests[[i]])
+  shap_results[[i]] = shapiro.test(outcomes_tests[[i]])
 }
-log_hist_norm
+shap_results
 ```
-###################
-Run robust regression with time as covariate  
-Check if R^2 changes
-```{r}
-target_dat_complete_long = reshape(target_dat_complete, varying = list(c("RAS_b_1_average","RAS_d_1_average"),c("RAS_b_2_average", "RAS_d_2_average"), c("RAS_b_3_average", "RAS_d_3_average"), c("RAS_b_5_average", "RAS_d_5_average"), c("INQ_b_1_average", "INQ_d_1_average"), c("INQ_b_2_average", "INQ_d_2_average"), c("SIS_b_1_average" ,"SIS_d_1_average"), c("SSMI_b_average", "SSMI_d_average")), direction = "long", times =c(0,1))
 
-target_dat_complete_long
+ •	What are the effects of the interventions on participants?
 
-```
-#################################################
-Generate regression format for excel pasting
-#################################################
+Indiviudal treatment models
+Put together model for each of the outcomes.  Then run loop on the outcomes
+
+(4) self-stigma of mental illness, thwarted belongingness, and perceived burdensomeness will each decrease 30% among youth enrolled in enhanced post-crisis follow-up by the discharge assessment; and 
+(5) scores on the suicidal ideation scale will decrease by 40% among youth enrolled in the enhanced post-crisis follow-up intervention, 
+(6) Scores on the recovery assessment scale will increase by 35% among youth enrolled in the enhanced post-crisis follow-up intervention. 
+
 ```{r}
+########## Phone only
 library(gvlma)
-### Create three data sets 
-target_dat_complete_long_t1 = subset(target_dat_complete_long, treatment == 1)
-target_dat_complete_long_t2 = subset(target_dat_complete_long, treatment == 2)
-target_dat_complete_long_t3 = subset(target_dat_complete_long, treatment == 3)
-outcomes_within_target_t1 = target_dat_complete_long_t1[,11:18]
-results_within_target_t1 = list()
-results_within_target_t1_sum = list() 
-results_within_target_t1_check = list()
-results_within_target_t1_confin = list()
-results_within_target_t1_f_2 = list()
-results_within_target_t1_sum_pars = list()
-library(MASS)
+tlc_complete_t1 = subset(tlc_complete, TXPackageAssigned == 1)
+outcomes_b_t1 = tlc_complete_t1[13:22]
+outcomes_d_t1 = tlc_complete_t1[23:32]
+library(effsize)
 
-library(forecast)
-for(i in 1:length(outcomes_within_target_t1)){
-  results_within_target_t1[[i]] = lm(outcomes_within_target_t1[[i]] ~ time, data = target_dat_complete_long_t1)
-  results_within_target_t1_sum[[i]] = summary(results_within_target_t1[[i]])
-  results_within_target_t1_sum_pars[[i]] =results_within_target_t1_sum[[i]][[4]][2,c(1:2,4)]
-  results_within_target_t1_check[[i]] = gvlma(results_within_target_t1[[i]])
-  results_within_target_t1_confin[[i]] = confint(results_within_target_t1[[i]]) 
-  results_within_target_t1_confin[[i]] = results_within_target_t1_confin[[i]][2,]
-  results_within_target_t1_f_2[[i]] = results_within_target_t1_sum[[i]]$adj.r.squared/(1-results_within_target_t1_sum[[i]]$adj.r.squared)
+results_t1 = list()
+for(i in 1:length(outcomes_b_t1)){
+  results_t1[[i]] = cohen.d(outcomes_d_t1[[i]],outcomes_b_t1[[i]], paired = TRUE)
+  results_t1[[i]] = results_t1[[i]][3:5]
 }
-summary(results_within_target_t1_check[[1]])
+results_t1 = unlist(results_t1)
+results_t1 = matrix(results_t1, ncol= 4, byrow = TRUE)
+colnames(results_t1) = c("d", "sd", "lower", "upper")
+results_t1 = data.frame(round(results_t1,3))
+results_t1$sig = ifelse(results_t1$lower < 0 & results_t1$upper > 0, "", "*")
+results_t1
 
-### Figure out how to get them into a format for excel with variable, parameter estimate, se, confint, and f^2
-results_within_target_t1_sum_pars = unlist(results_within_target_t1_sum_pars)
-results_within_target_t1_sum_pars = matrix(results_within_target_t1_sum_pars, ncol= 3, byrow = TRUE)
-colnames(results_within_target_t1_sum_pars) = c("par_est", "se", "p_value")
-results_within_target_t1_sum_pars = round(results_within_target_t1_sum_pars, 3)
-results_within_target_t1_sum_pars = data.frame(results_within_target_t1_sum_pars)
-results_within_target_t1_sum_pars
-
-###### Clean up the confin 
-results_within_target_t1_confin= unlist(results_within_target_t1_confin)
-results_within_target_t1_confin = matrix(results_within_target_t1_confin, ncol = 2, byrow = TRUE)
-results_within_target_t1_confin = data.frame(results_within_target_t1_confin)
-results_within_target_t1_confin = round(results_within_target_t1_confin, 3)
-results_within_target_t1_confin$ci = paste0(results_within_target_t1_confin$X1, sep=",", results_within_target_t1_confin$X2)
-results_within_target_t1_confin = results_within_target_t1_confin[,3]
-results_within_target_t1_confin = data.frame(ci = results_within_target_t1_confin)
-results_within_target_t1_confin
+ci_95 = paste0(results_t1$lower, sep = ",", results_t1$upper)
+results_t1 = data.frame(results_t1, ci_95)
+results_t1 = results_t1[,-c(3:4)]
+results_t1
 
 
-### Add f^2
-results_within_target_t1_f_2 = unlist(results_within_target_t1_f_2)
-results_within_target_t1_f_2 = matrix(results_within_target_t1_f_2, ncol = 1, byrow = TRUE)
-results_within_target_t1_f_2 = round(results_within_target_t1_f_2, 3)
-colnames(results_within_target_t1_f_2) = "f_2"
-results_within_target_t1_f_2 = data.frame(results_within_target_t1_f_2)
-results_within_target_t1_f_2
+########## Phone + Text
+tlc_complete_t2 = subset(tlc_complete, TXPackageAssigned == 2)
+outcomes_b_t2 = tlc_complete_t2[13:22]
+outcomes_d_t2 = tlc_complete_t2[23:32]
+library(effsize)
 
+results_t2 = list()
+for(i in 1:length(outcomes_b_t2)){
+  results_t2[[i]] = cohen.d(outcomes_d_t2[[i]],outcomes_b_t2[[i]], paired = TRUE)
+  results_t2[[i]] = results_t2[[i]][3:5]
+}
+results_t2 = unlist(results_t2)
+results_t2 = matrix(results_t2, ncol= 4, byrow = TRUE)
+colnames(results_t2) = c("d", "sd", "lower", "upper")
+results_t2 = data.frame(round(results_t2,3))
+results_t2$sig = ifelse(results_t2$lower < 0 & results_t2$upper > 0, "", "*")
+results_t2
 
-#### All data
-all_results_within_target_1 = data.frame(results_within_target_t1_sum_pars, ci = results_within_target_t1_confin$ci, f_2 = results_within_target_t1_f_2$f_2)
-all_results_within_target_1
+ci_95 = paste0(results_t2$lower, sep = ",", results_t2$upper)
+results_t2 = data.frame(results_t2, ci_95)
+results_t2 = results_t2[,-c(3:4)]
+results_t2
 
+####### Phone + text + face to face
+tlc_complete_t3 = subset(tlc_complete, TXPackageAssigned == 3)
+outcomes_b_t3 = tlc_complete_t3[13:22]
+outcomes_d_t3 = tlc_complete_t3[23:32]
+library(effsize)
+
+results_t3 = list()
+for(i in 1:length(outcomes_b_t3)){
+  results_t3[[i]] = cohen.d(outcomes_d_t3[[i]],outcomes_b_t3[[i]], paired = TRUE)
+  results_t3[[i]] = results_t3[[i]][3:5]
+}
+results_t3 = unlist(results_t3)
+results_t3 = matrix(results_t3, ncol= 4, byrow = TRUE)
+colnames(results_t3) = c("d", "sd", "lower", "upper")
+results_t3 = data.frame(round(results_t3,3))
+results_t3$sig = ifelse(results_t3$lower < 0 & results_t3$upper > 0, "", "*")
+results_t3
+
+ci_95 = paste0(results_t3$lower, sep = ",", results_t3$upper)
+results_t3 = data.frame(results_t3, ci_95)
+results_t3 = results_t3[,-c(3:4)]
+results_t3
+
+########### Combine all results
+within_results_target = rbind(results_t1, results_t2, results_t3)
+var_names = rep(names(outcomes_d_t3), 3)
+within_results_target = data.frame(var_names, within_results_target) 
+within_results_target
+
+write.csv(within_results_target, "within_results_target.csv", row.names = FALSE)
 ```
-Within target 1 Standardized version
-Between target 1 regular
-Between target 1 standard
-SIS variance explained version
 
-Now try compare all treatments
+Now comparison models for each 
+Need to figure out how to grab the effects and compare them
+Contrasts are asking whether t3-t2
+
+•	Does the effect vary by mode of intervention (i.e., phone, phone and caring texts, phone and face-to-face contacts)
+
+(8) Youth’s outcomes will not vary by mode of treatment (i.e., phone, phone & face-to-face, phone & caring texts). 
 ```{r}
-outcomes_within_target = target_dat_complete_long[,11:18]
+### standardized
+### Try linear regression version and see if contrasts are similar
+library(multcomp)
+### Try linear regression version and see if contrasts are similar
+outcomes_freq = tlc_complete[,33:42]
+outcomes_freq_stand = data.frame(apply(outcomes_freq, 2, function(x){scale(x)}))
+outcomes_freq_results = list()
+outcomes_freq_sum = list()
+outcomes_freq_con = list()
+outcomes_freq_results_conf = list()
+outcomes_freq_results_check = list()
+t = list()
+t_sum = list()
+t_conf = list()
 
-results_within_target = list()
-results_within_target_sum = list() 
-results_within_target_t1_check = list()
-results_within_target_t1_confin = list()
-results_within_target_t1_f_2 = list()
-results_within_target_t1_sum_pars = list()
-
-for(i in 1:length(outcomes_within_target_t1)){
-  results_within_target[[i]] = lm(outcomes_within_target[[i]]~ treatment*time, data = target_dat_complete_long)
-  results_within_target_sum[[i]] = summary(results_within_target[[i]])
-  results_within_target_sum[[i]] = results_within_target_sum[[i]]$coefficients[c(5:6), c(1,2,4)]
+test_r = rlm(tlc_complete$RAS_1_diff ~ TXPackageAssigned, data = tlc_complete)
+summary(test_r)
+confint(test_r)
+for(i in 1:length(outcomes_freq)){
+  outcomes_freq_results[[i]] = lm(outcomes_freq_stand[[i]] ~   factor(TXPackageAssigned), data = tlc_complete)
+  outcomes_freq_sum[[i]] = summary(outcomes_freq_results[[i]])
+  outcomes_freq_sum[[i]] = outcomes_freq_sum[[i]][[4]][2:3,1:2]
+  outcomes_freq_results_conf[[i]] = confint(outcomes_freq_results[[i]])
+  outcomes_freq_results_conf[[i]] = outcomes_freq_results_conf[[i]][2:3,]
+  outcomes_freq_results_check[[i]] = gvlma(outcomes_freq_results[[i]])
+  K = matrix(c(0, 1,-1), ncol = 3, nrow = 1, byrow = TRUE)
+  t[[i]] = glht(outcomes_freq_results[[i]], linfct = K)
+  t_sum[[i]] = summary(t[[i]])
+  t_conf[[i]] = confint(t[[i]])
 }
-results_within_target_sum
+### For outcomes
+outcomes_freq_sum
+outcomes_freq_sum = unlist(outcomes_freq_sum)
+write.csv(outcomes_freq_sum, "outcomes_freq_sum.csv", row.names = FALSE)
+outcomes_freq_sum = read.csv("outcomes_freq_sum.csv", header = TRUE)
+outcomes_freq_sum
+outcomes_freq_sum = matrix(outcomes_freq_sum$x, ncol = 4, byrow = TRUE)
+outcomes_freq_sum = data.frame(estimate_1 = outcomes_freq_sum[,1], se_1 = outcomes_freq_sum[,3], estimate_2 = outcomes_freq_sum[,2], se_2 = outcomes_freq_sum[,4])
+
+est1 = data.frame(estimate = outcomes_freq_sum$estimate_1)
+est2 = data.frame(estimate = outcomes_freq_sum$estimate_2)
+ests = rbind(est1, est2)
+ests
+
+se1 = data.frame(se = outcomes_freq_sum$se_1)
+se2 = data.frame(se = outcomes_freq_sum$se_2)
+ses = rbind(se1, se2)
+ses
+
+ests_ses = round(data.frame(ests, ses),3)
+ests_ses
+### Now for ci of outcomes
+outcomes_freq_results_conf
+outcomes_freq_results_conf = unlist(outcomes_freq_results_conf)
+write.csv(outcomes_freq_results_conf, "outcomes_freq_results_conf_stand.csv", row.names = FALSE)
+outcomes_freq_results_conf = read.csv("outcomes_freq_results_conf_stand.csv", header = TRUE)
+outcomes_freq_results_conf
+outcomes_freq_results_conf = matrix(outcomes_freq_results_conf$x, ncol = 4, byrow = TRUE)
+outcomes_freq_results_conf = data.frame(outcomes_freq_results_conf)
+outcomes_freq_results_conf = data.frame(lower_1 = outcomes_freq_results_conf$X1, upper_1 = outcomes_freq_results_conf$X3, lower_2 = outcomes_freq_results_conf$X2, upper_2 = outcomes_freq_results_conf$X4)
+outcomes_freq_results_conf
+
+ci_1_upper = data.frame(upper = outcomes_freq_results_conf$upper_1)
+ci_2_upper = data.frame(upper = outcomes_freq_results_conf$upper_2)
+ci_upper = rbind(ci_1_upper, ci_2_upper)
+
+ci_1_lower = data.frame(lower = outcomes_freq_results_conf$lower_1)
+ci_2_lower = data.frame(lower = outcomes_freq_results_conf$lower_2)
+ci_lower = rbind(ci_1_lower, ci_2_lower)
+
+ci_upper_lower = round(data.frame(ci_lower, ci_upper),3)
+
+sig_target_between = ifelse(ci_upper_lower$lower < 0 & ci_upper_lower$upper > 0, "", "*")
+
+
+
+ci_target_between = paste0(ci_upper_lower$lower, sep = ",", ci_upper_lower$upper)
+
+
+var_names_between = rep(names(outcomes_freq), 2)
+between_target_results = data.frame(var_names_between, ests_ses, ci_target_between, sig_target_between)
+between_target_results
+
+write.csv(between_target_results, "between_target_results.csv", row.names = FALSE)
+
+t_sum
+t_conf
+
+```
+###########################
+SIS outcomes associated with it
+##########################
+```{r}
+outcomes_freq
+corr.test(outcomes_freq)
+
+suicide_idea_model_0 = lm(SIS_1_diff ~ RAS_1_diff + RAS_2_diff + RAS_3_diff + INQ_1_diff + INQ_2_diff + SSMI_diff + PHQ9_diff + SIS_2_diff, data = outcomes_freq_stand)
+vif(suicide_idea_model_0)
+suicide_idea_model_sum_0 = summary(suicide_idea_model_0)
+suicide_idea_model_sum_0
+round(suicide_idea_model_sum_0$coefficients,3)
+
+suicide_idea_model_1 = lm(SIS_1_diff ~ RAS_1_diff  + RAS_3_diff + INQ_1_diff + INQ_2_diff  + PHQ9_diff + SIS_2_diff, data = outcomes_freq_stand)
+summary(suicide_idea_model_1)
+
+
+checK_assump = gvlma(suicide_idea_model)
+checK_assump
+par(mar=c(1,1,1,1))
+plot.gvlma(checK_assump)
+library(car)
+checkresiduals(suicide_idea_model)
+
+
 ```
 
 
+
+
+Try testing whether the inclusion of HoursPsychotherapy, CurrentlyEngaged makes a difference
+
+•	What program/contextual factors are associated with which outcomes?
+```{r}
+
+tlc_complete_t1 = subset(tlc_complete, TXPackageAssigned == 1)
+cor(tlc_complete_t1[,7:12])
+outcomes_t1 = tlc_complete_t1[,13:22]
+
+results_t1 = list()
+for(i in 1:length(outcomes_t1)){
+  results_t1[[i]] = summary(stan_glm(outcomes_t1[[i]] ~ HoursPsychotherapy  + Attend75Referrals+ CrisisPlan80Time, data = tlc_complete_t1))
+}
+
+results_t1
+
+tlc_complete_t2 = subset(tlc_complete, TXPackageAssigned == 2)
+outcomes_t2 = tlc_complete_t2[,13:22]
+describe(outcomes_t2)
+
+results_t2 = list()
+for(i in 1:length(outcomes_t2)){
+  results_t2[[i]] = summary(stan_glm(outcomes_t2[[i]] ~ HoursPsychotherapy  + Attend75Referrals+  CrisisPlan80Time, data = tlc_complete_t2))
+}
+results_t2
+
+tlc_complete_t3 = subset(tlc_complete, TXPackageAssigned == 3)
+outcomes_t3 = tlc_complete_t3[,13:22]
+
+results_t3 = list()
+for(i in 1:length(outcomes_t3)){
+  results_t3[[i]] = summary(stan_glm(outcomes_t3[[i]] ~ HoursPsychotherapy  + Attend75Referrals+    CrisisPlan80Time, data = tlc_complete_t3))
+}
+results_t3
+
+```
+Try testing whether the inclusion of demos makes a difference
+
+•	What individual factors were associated with outcomes, including race/ethnicity/sexual identity (sexual orientation/gender identity)?
+```{r}
+tlc_complete_t1 = subset(tlc_complete, TXPackageAssigned == 1)
+cor(tlc_complete_t1[,7:12])
+outcomes_t1 = tlc_complete_t1[,13:22]
+#Age, Gender (female), RaceEthnicity (non-white), SexualOrientation (sexual minor)
+tlc_complete_t1$Gender = ifelse(tlc_complete_t1$Gender == 1, 0,1)
+tlc_complete_t1$RaceEthnicity = ifelse(tlc_complete_t1$RaceEthnicity == 3, 0,1)
+tlc_complete_t1$SexualOrientation = ifelse(tlc_complete_t1$SexualOrientation == 5,0,1)
+
+head(tlc_complete_t1)
+
+results_t1 = list()
+model_t1 = list()
+for(i in 1:length(outcomes_t1)){
+  model_t1[[i]] = summary(stan_glm(outcomes_t1[[i]] ~ Age+ Gender +RaceEthnicity + SexualOrientation, data = tlc_complete_t1))
+}
+
+results_t1
+
+tlc_complete_t2 = subset(tlc_complete, TXPackageAssigned == 2)
+outcomes_t2 = tlc_complete_t2[,13:22]
+describe(outcomes_t2)
+tlc_complete_t2$Gender = ifelse(tlc_complete_t2$Gender == 1, 0,1)
+tlc_complete_t2$RaceEthnicity = ifelse(tlc_complete_t2$RaceEthnicity == 3, 0,1)
+tlc_complete_t2$SexualOrientation = ifelse(tlc_complete_t2$SexualOrientation == 5,0,1)
+
+results_t2 = list()
+for(i in 1:length(outcomes_t2)){
+  results_t2[[i]] = summary(stan_glm(outcomes_t2[[i]] ~ Age+ Gender +RaceEthnicity + SexualOrientation, data = tlc_complete_t2))
+}
+results_t2
+
+tlc_complete_t3 = subset(tlc_complete, TXPackageAssigned == 3)
+outcomes_t3 = tlc_complete_t3[,13:22]
+tlc_complete_t3$Gender = ifelse(tlc_complete_t3$Gender == 1, 0,1)
+tlc_complete_t3$RaceEthnicity = ifelse(tlc_complete_t3$RaceEthnicity == 3, 0,1)
+tlc_complete_t3$SexualOrientation = ifelse(tlc_complete_t3$SexualOrientation == 5,0,1)
+
+results_t3 = list()
+for(i in 1:length(outcomes_t3)){
+  results_t3[[i]] = summary(stan_glm(outcomes_t3[[i]] ~Age+ Gender +RaceEthnicity + SexualOrientation, data = tlc_complete_t3))
+}
+results_t3
+```
+
+•	Does effectiveness of the program intervention vary according to clinical risk presentation (e.g., suicide risk score, history of past attempts)? 
+
+```{r}
+tlc_complete_t1 = subset(tlc_complete, TXPackageAssigned == 1)
+outcomes_t1 = tlc_complete_t1[,13:22]
+
+head(tlc_complete_t1)
+
+results_t1 = list()
+for(i in 1:length(outcomes_t1)){
+  results_t1[[i]] = summary(stan_glm(outcomes_t1[[i]] ~ PHQ9_b, data = tlc_complete_t1))
+}
+
+results_t1
+
+tlc_complete_t2 = subset(tlc_complete, TXPackageAssigned == 2)
+outcomes_t2 = tlc_complete_t2[,13:22]
+
+results_t2 = list()
+for(i in 1:length(outcomes_t2)){
+  results_t2[[i]] = summary(stan_glm(outcomes_t2[[i]] ~PHQ9_b, data = tlc_complete_t2))
+}
+results_t2
+
+tlc_complete_t3 = subset(tlc_complete, TXPackageAssigned == 3)
+outcomes_t3 = tlc_complete_t3[,13:22]
+
+results_t3 = list()
+for(i in 1:length(outcomes_t3)){
+  results_t3[[i]] = summary(stan_glm(outcomes_t3[[i]] ~PHQ9_b, data = tlc_complete_t3))
+}
+results_t3
+
+```
+
+
+Pyschometrics
+Test confirmatory factor because we have support that should be one factor
+Then do invar and see if related to any factors that you included
+
+See Hirschfeld(2014) for details
+```{r}
+head(tlc_data_analysis)
+INQ_b_average = tlc_data_analysis[,29:40]
+INQ_b_average$ID = 1:dim(INQ_b_average)[1]
+## Create a variable without any missing data
+library(caret)
+inTrain = createDataPartition(y = INQ_b_average$ID, p = .50, list = FALSE)
+efa_b_inq = INQ_b_average[inTrain,]
+cfa_b_inq = INQ_b_average[-inTrain,]
+efa_b_inq$ID = NULL
+cfa_b_inq$ID = NULL
+INQ_b_average$ID = NULL
+
+library(psych)
+efa_b_1 = fa(r = efa_b_inq, nfactors = 1, fm = "gls")
+efa_b_2 = fa(r = efa_b_inq, nfactors = 2, fm = "gls")
+efa_b_3 = fa(r = efa_b_inq, nfactors = 3, fm = "gls")
+
+anova(efa_b_1, efa_b_2)
+anova(efa_b_2, efa_b_3)
+fa.diagram(efa_b_2)
+fa.diagram(efa_b_3)
+
+####
+vss(efa_b_inq)
+###
+library(paran)
+efa_b_inq_complete = na.omit(efa_b_inq)
+paran(efa_b_inq_complete, centile = 95, iterations = 1000, graph = TRUE, cfa = TRUE)
+
+### Try CFA
+
+model_1  ='INQ12 =~ INQ1_B + INQ2_B + INQ3_B + INQ4_B + INQ5_B + INQ6_B + INQ7_B + INQ8_B + INQ9_B+ INQ10_B + INQ10_B + INQ11_B + INQ12_B'
+
+library(lavaan)
+fit_1 = cfa(model_1, estimator = "MLR", missing = "ML", data = cfa_b_inq)
+summary(fit_1, fit.measures = TRUE, standardized = TRUE)
+
+model_2  ='INQ12_1 =~ INQ1_B + INQ2_B + INQ3_B + INQ4_B + INQ5_B + INQ6_B
+          INQ12_2 =~ INQ7_B + INQ8_B + INQ9_B+ INQ10_B + INQ10_B + INQ11_B + INQ12_B'
+
+fit_2 = cfa(model_2, estimator = "MLR", missing = "ML", data = cfa_b_inq)
+summary(fit_2, fit.measures = TRUE, standardized = TRUE)
+
+### Measurement invariance at base for everything besides time 
+library(semTools)
+
+model_2  ='INQ12_1 =~ INQ1_B + INQ2_B + INQ3_B + INQ4_B + INQ5_B + INQ6_B
+          INQ12_2 =~ INQ7_B + INQ8_B + INQ9_B+ INQ10_B + INQ10_B + INQ11_B + INQ12_B'
+head(tlc_data_analysis)
+measure_invar = tlc_data_analysis
+head(measure_invar)
+measure_invar$HispanicLatino = ifelse(measure_invar$HispanicLatino == 2, NA, measure_invar$HispanicLatino)
+describe.factor(measure_invar$HispanicLatino)
+describe.factor(measure_invar$RaceEthnicity)
+### Non-white versus white
+measure_invar$RaceEthnicity = ifelse(measure_invar$RaceEthnicity != 3, 0, 1)
+describe.factor(measure_invar$Version)
+###sexual minority versus sexual majority
+describe.factor(measure_invar$SexualOrientation)
+measure_invar$SexualOrientation = ifelse(measure_invar$SexualOrientation != 5, 0,1)
+measure_invar$Age = as.numeric(measure_invar$Age)
+## Greater than the average age so "older" youth
+measure_invar$Age = ifelse(measure_invar$Age > mean(measure_invar$Age, na.rm = TRUE), 1, 0)
+#female
+measure_invar$Gender = ifelse(measure_invar$Gender == 1, 0, 1)
+
+measure_invar_config = list()
+measure_invar_weak = list()
+measure_invar_strong = list()
+measure_invar_strict = list()
+anova_results = list()
+measure_invar_names = names(measure_invar)[3:8]
+for(i in 1:length(measure_invar_names)){
+ measure_invar_config[[i]]= cfa(model_2, data = measure_invar, group = measure_invar_names[[i]], estimator = "MLR", missing = "ML")
+ measure_invar_weak[[i]]= cfa(model_2, data = measure_invar, group = measure_invar_names[[i]], estimator = "MLR", missing = "ML", group.equal="loadings")
+ measure_invar_strong[[i]]= cfa(model_2, data = measure_invar, group = measure_invar_names[[i]], estimator = "MLR", missing = "ML", group.equal=c("loadings", "intercepts"))
+ measure_invar_strict[[i]]= cfa(model_2, data = measure_invar, group = measure_invar_names[[i]], estimator = "MLR", missing = "ML", group.equal=c("loadings", "intercepts", "residuals"))
+ anova_results[[i]] = anova(measure_invar_config[[i]], measure_invar_weak[[i]], measure_invar_strong[[i]], measure_invar_strict[[i]])
+}
+anova_results
+
+
+```
+Concurrent and predictive with suicideal ideation
+Get all three measures into total scores and then one data set
+```{r}
+con_pred = data.frame(INQ_b_1_average, INQ_b_2_average, SIS_b_1_average, SIS_b_2_average, SIS_d_1_average, SIS_d_2_average)
+head(con_pred)
+library(Hmisc)
+con_pred
+rcorr(as.matrix(con_pred), type = "spearman")
+cor(con_pred)
+```
+
+Get Measurement invar over time
+Get later too much brain power
+```{r}
+INQ_b_1 = tlc_data_analysis[,29:34]
+INQ_b_1$id = rep(0, dim(INQ_b_1)[1])
+
+INQ_b_2 = tlc_data_analysis[,35:40]
+INQ_b_2 = 8-INQ_b_2
+INQ_b_2$id = rep(0, dim(INQ_b_2)[1])
+
+INQ_d_1 = tlc_data_analysis[,73:78]
+INQ_d_1$id = rep(1, dim(INQ_d_1)[1])
+
+INQ_d_2 = tlc_data_analysis[,79:84]
+INQ_d_2 = 8-INQ_d_2
+INQ_d_2$id = rep(1, dim(INQ_d_2)[1])
+
+## Change names to be the same then rbind
+colnames(INQ_d_1) = colnames(INQ_b_1)
+colnames(INQ_d_2) = colnames(INQ_b_2)
+
+INQ_b_d_1 = rbind(INQ_b_1, INQ_d_1)
+INQ_b_d_2 = rbind(INQ_b_2, INQ_d_2)
+INQ_b_d = cbind(INQ_b_d_1, INQ_b_d_2)
+INQ_b_d
+```
+Now invar with time
+```{r}
+measure_invar_config = list()
+measure_invar_weak = list()
+measure_invar_strong = list()
+measure_invar_strict = list()
+anova_results = list()
+library(lavaan)
+
+model_2  ='INQ12_1 =~ INQ1_B + INQ2_B + INQ3_B + INQ4_B + INQ5_B + INQ6_B
+          INQ12_2 =~ INQ7_B + INQ8_B + INQ9_B+ INQ10_B + INQ10_B + INQ11_B + INQ12_B'
+
+
+measure_invar_names = names(INQ_b_d)[14]
+for(i in 1:length(measure_invar_names)){
+ measure_invar_config[[i]]= cfa(model_2, data = INQ_b_d[,1:13], group = measure_invar_names[[i]], estimator = "MLR", missing = "ML")
+ measure_invar_weak[[i]]= cfa(model_2, data = INQ_b_d[,1:13], group = measure_invar_names[[i]], estimator = "MLR", missing = "ML", group.equal="loadings")
+ measure_invar_strong[[i]]= cfa(model_2, data = INQ_b_d[,1:13], group = measure_invar_names[[i]], estimator = "MLR", missing = "ML", group.equal=c("loadings", "intercepts"))
+ measure_invar_strict[[i]]= cfa(model_2, data = INQ_b_d[,1:13], group = measure_invar_names[[i]], estimator = "MLR", missing = "ML", group.equal=c("loadings", "intercepts", "residuals"))
+ anova_results[[i]] = anova(measure_invar_config[[i]], measure_invar_weak[[i]], measure_invar_strong[[i]], measure_invar_strict[[i]])
+}
+anova_results
+
+```
+
+
+
+
+
+RAS psycho
+```{r}
+head(tlc_data_analysis)
+RAS_b_average = tlc_data_analysis[,9:28]
+RAS_b_average$ID = 1:dim(RAS_b_average)[1]
+## Create a variable without any missing data
+library(caret)
+inTrain = createDataPartition(y = RAS_b_average$ID, p = .50, list = FALSE)
+efa_b_RAS = RAS_b_average[inTrain,]
+cfa_b_RAS = RAS_b_average[-inTrain,]
+efa_b_RAS$ID = NULL
+cfa_b_RAS$ID = NULL
+RAS_b_average$ID = NULL
+
+library(psych)
+efa_b_1 = fa(r = efa_b_RAS, nfactors = 1, fm = "gls")
+efa_b_2 = fa(r = efa_b_RAS, nfactors = 2, fm = "gls")
+efa_b_3 = fa(r = efa_b_RAS, nfactors = 3, fm = "gls")
+efa_b_4 = fa(r = efa_b_RAS, nfactors = 4, fm = "gls")
+efa_b_5 = fa(r = efa_b_RAS, nfactors = 5, fm = "gls")
+
+
+anova(efa_b_1, efa_b_2)
+anova(efa_b_2, efa_b_3)
+anova(efa_b_3, efa_b_4)
+anova(efa_b_4, efa_b_5)
+
+fa.diagram(efa_b_5)
+
+####
+vss(efa_b_RAS)
+###
+library(paran)
+efa_b_RAS_complete = na.omit(efa_b_RAS)
+paran(efa_b_RAS_complete, centile = 95, iterations = 1000, graph = TRUE, cfa = TRUE)
+
+
+### Try CFA
+#f = 6, g = 7, h = 8, I = 9,  j = 10, k = 11, l = 12, m = 13, t = 20
+#q=17,r=18,s=19
+#a,b,c,d,e
+#n=14,o=15,p=16
+
+
+model_1  ='RAS_1_B =~ RAS6_B + RAS7_B + RAS8_B + RAS9_B + RAS10_B + RAS11_B + RAS12_B + RAS13_B + RAS20_B
+RAS_2_B =~  RAS17_B + RAS18_B + RAS19_B
+RAS_3_B =~ RAS1_B + RAS2_B + RAS3_B + RAS4_B + RAS5_B
+RAS_4_B =~ RAS14_B + RAS15_B + RAS16_B '
+
+library(lavaan)
+fit_1 = cfa(model_1, estimator = "MLR", missing = "ML", data = cfa_b_RAS)
+summary(fit_1, fit.measures = TRUE, standardized = TRUE)
+```
+SSMI Pyscho Not bad
+```{r}
+head(tlc_data_analysis)
+SSMI_b_average = tlc_data_analysis[,41:45]
+SSMI_b_average$ID = 1:dim(SSMI_b_average)[1]
+## Create a variable without any missing data
+library(caret)
+inTrain = createDataPartition(y = SSMI_b_average$ID, p = .50, list = FALSE)
+efa_b_SSMI = SSMI_b_average[inTrain,]
+cfa_b_SSMI = SSMI_b_average[-inTrain,]
+efa_b_SSMI$ID = NULL
+cfa_b_SSMI$ID = NULL
+SSMI_b_average$ID = NULL
+
+library(psych)
+efa_b_1 = fa(r = efa_b_SSMI, nfactors = 1, fm = "gls")
+efa_b_2 = fa(r = efa_b_SSMI, nfactors = 2, fm = "gls")
+efa_b_3 = fa(r = efa_b_SSMI, nfactors = 3, fm = "gls")
+
+anova(efa_b_1, efa_b_2)
+anova(efa_b_2, efa_b_3)
+fa.diagram(efa_b_2)
+
+####
+vss(efa_b_SSMI)
+###
+library(paran)
+efa_b_SSMI_complete = na.omit(efa_b_SSMI)
+paran(efa_b_SSMI_complete, centile = 95, iterations = 1000, graph = TRUE, cfa = TRUE)
+
+
+### Try CFA
+
+model_1  ='SSMI_B =~ SSMI1_B + SSMI2_B + SSMI3_B + SSMI4_B + SSMI5_B'
+
+library(lavaan)
+fit_1 = cfa(model_1, estimator = "MLR", missing = "ML", data = cfa_b_SSMI)
+summary(fit_1, fit.measures = TRUE, standardized = TRUE)
+```
+SIS Excellent
+```{r}
+head(tlc_data_analysis)
+SIS_b_average = tlc_data_analysis[,46:52]
+SIS_b_average$ID = 1:dim(SIS_b_average)[1]
+## Create a variable without any missing data
+library(caret)
+inTrain = createDataPartition(y = SIS_b_average$ID, p = .50, list = FALSE)
+efa_b_SIS = SIS_b_average[inTrain,]
+cfa_b_SIS = SIS_b_average[-inTrain,]
+efa_b_SIS$ID = NULL
+cfa_b_SIS$ID = NULL
+SIS_b_average$ID = NULL
+
+library(psych)
+efa_b_1 = fa(r = efa_b_SIS, nfactors = 1, fm = "gls")
+efa_b_2 = fa(r = efa_b_SIS, nfactors = 2, fm = "gls")
+efa_b_3 = fa(r = efa_b_SIS, nfactors = 3, fm = "gls")
+
+anova(efa_b_1, efa_b_2)
+anova(efa_b_2, efa_b_3)
+fa.diagram(efa_b_2)
+
+####
+vss(efa_b_SIS)
+###
+library(paran)
+efa_b_SIS_complete = na.omit(efa_b_SIS)
+paran(efa_b_SIS_complete, centile = 95, iterations = 1000, graph = TRUE, cfa = TRUE)
+
+
+### Try CFA
+
+model_1  ='SIS_1_B =~ SIS1_B + SIS2_B + SIS3_B + SIS4_B
+          SIS_2_B =~ + SIS5_B + SIS6_B + SIS7_B'
+
+library(lavaan)
+fit_1 = cfa(model_1, estimator = "MLR", missing = "ML", data = cfa_b_SIS)
+summary(fit_1, fit.measures = TRUE, standardized = TRUE)
+```
+
+
+Get reliability for two factors, test-retest 
+```{r}
+inq12_b_fac1 = tlc_data_analysis[,29:34]
+inq12_b_fac1_mean = apply(inq12_b_fac1, 1, mean, na.rm = TRUE)
+inq12_b_fac2 = tlc_data_analysis[,35:40]
+inq12_b_fac2_mean = apply(inq12_b_fac2, 1, mean, na.rm = TRUE)
+
+
+inq12_d_fac1 = tlc_data_analysis[,73:78]
+inq12_d_fac1_mean = apply(inq12_d_fac1, 1, mean, na.rm = TRUE)
+inq12_d_fac2 = tlc_data_analysis[,79:84]
+inq12_d_fac2_mean = apply(inq12_d_fac2, 1, mean, na.rm = TRUE)
+
+summary(omega(inq12_b_fac1))
+summary(omega(inq12_b_fac2))
+
+
+hist(inq12_b_fac1_mean)
+qqnorm(inq12_b_fac1_mean)
+
+cor.test(inq12_b_fac1_mean, inq12_d_fac1_mean, method = "kendall")
+cor.test(inq12_b_fac2_mean, inq12_d_fac2_mean, method = "kendall")
+```

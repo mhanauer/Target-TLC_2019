@@ -137,12 +137,28 @@ SIS_2_diff = SIS_d_2_average-SIS_b_2_average
 PHQ9_diff = tlc_data_analysis$PHQ9_4 - tlc_data_analysis$PHQ9_1
 
 #### Create new data with average scores
-apply(tlc_data_analysis, 2, function(x){describe.factor(x)})
-tlc_data_analysis_average = data.frame(tlc_data_analysis[,c(2,4:8, 99:104)], RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SSMI_b_average, SIS_b_1_average, SIS_b_2_average, PHQ9_b = tlc_data_analysis$PHQ9_1,RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SSMI_d_average, SIS_d_1_average, SIS_d_2_average,PHQ9_d = tlc_data_analysis$PHQ9_4, RAS_1_diff ,RAS_2_diff, RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SSMI_diff, SIS_1_diff, SIS_2_diff, PHQ9_diff)
+#apply(tlc_data_analysis, 2, function(x){describe.factor(x)})
+tlc_data_analysis_average = data.frame(tlc_data_analysis[,c(1,2,4:8, 99:104)], RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SSMI_b_average, SIS_b_1_average, SIS_b_2_average, PHQ9_b = tlc_data_analysis$PHQ9_1,RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SSMI_d_average, SIS_d_1_average, SIS_d_2_average,PHQ9_d = tlc_data_analysis$PHQ9_4, RAS_1_diff ,RAS_2_diff, RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SSMI_diff, SIS_1_diff, SIS_2_diff, PHQ9_diff)
 
 head(tlc_data_analysis_average)
 
-tlc_data_analysis_average 
+tlc_data_analysis_average
+
+########## Invalid parts
+## Excluding .1's those without a treatment package assigned
+is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol
+whole_number =  is.wholenumber(tlc_data_analysis_average$YouthID)
+tlc_data_analysis_average$whole_number = whole_number
+tlc_data_analysis_average = subset(tlc_data_analysis_average, whole_number == TRUE)
+dim(tlc_data_analysis_average)
+tlc_data_analysis_average$YouthID = NULL
+tlc_data_analysis_average$whole_number = NULL
+### Get rid of those with no treatment packages
+describe.factor(tlc_data_analysis_average$TXPackageAssigned)
+tlc_data_analysis_average$no_treat_package = is.na(tlc_data_analysis_average$TXPackageAssigned)
+tlc_data_analysis_average = subset(tlc_data_analysis_average, no_treat_package == FALSE)
+dim(tlc_data_analysis_average)
+tlc_data_analysis_average$no_treat_package = NULL
 
 ```
 Evaluate missing data
@@ -156,7 +172,7 @@ library(naniar)
 dim(tlc_data_analysis_average)
 var_missing =  miss_var_summary(tlc_data_analysis_average)
 var_missing = data.frame(var_missing)
-var_missing
+write.csv(var_missing, "var_missing.csv", row.names = FALSE)
 #write.csv(var_missing, "var_missing.csv", row.names = FALSE)
 full_n = dim(tlc_data_analysis_average)[1]
 ############## Getting rid of anybody who doesn't have a follow-up
@@ -164,6 +180,7 @@ quasi_itt =  apply(tlc_data_analysis_average[,33:42], 1, function(x)(sum(is.na(x
 quasi_itt_dat = data.frame(tlc_data_analysis_average,quasi_itt)
 ### Ten variables and threshold is less than 70% 
 quasi_itt_dat = subset(quasi_itt_dat, quasi_itt < 8)
+quasi_itt_dat$quasi_itt = NULL
 dim(quasi_itt_dat)
 quasi_itt_n = dim(quasi_itt_dat)[1]
 ### Percentage of drop for quasi itt
@@ -194,7 +211,7 @@ missing_results = round(missing_results, 3)
 missing_results = t(missing_results)
 colnames(missing_results)= "n_percent"
 #### Add a column with explainations for each of them
-explain = c("Total number of participants. Anyone who assigned an ID is included.", "Total number of participants who completed at least 70% of a discharge. This data set still contains missing values.", "Total number of complete cases.", "Percentage of clients who did not complete at least 70% of discharge.", "Percentage of missing data.", "Percentage of missing data without PHQ-9 or Psychotherapy.")
+explain = c("Total number of participants. Anyone who assigned an ID is included that was not .1. Excluded if not assigned a treatment", "Total number of participants who completed at least 70% of a discharge. This data set still contains missing values.", "Total number of complete cases.", "Percentage of clients who did not complete at least 70% of discharge.", "Percentage of missing data.", "N for complete data without PHQ-9 or Psychotherapy.")
 missing_results = data.frame(missing_results, explain)
 
 write.csv(missing_results, "missing_results.csv")
@@ -397,9 +414,6 @@ t = list()
 t_sum = list()
 t_conf = list()
 
-test_r = rlm(tlc_complete$RAS_1_diff ~ TXPackageAssigned, data = tlc_complete)
-summary(test_r)
-confint(test_r)
 for(i in 1:length(outcomes_freq)){
   outcomes_freq_results[[i]] = lm(outcomes_freq_stand[[i]] ~   factor(TXPackageAssigned), data = tlc_complete)
   outcomes_freq_sum[[i]] = summary(outcomes_freq_results[[i]])
@@ -518,6 +532,53 @@ library(car)
 checkresiduals(resolved_model)
 
 
+```
+###########################
+Imputted results
+###########################
+
+######################
+Within target results
+######################
+
+######################
+Between target
+######################
+```{r}
+library(Amelia)
+impute_dat = quasi_itt_dat
+describe.factor(impute_dat$TXPackageAssigned)
+### Try coding as binary for everything besies treatment package
+##
+impute_dat$female = ifelse(impute_dat$Gender == 2, 1, 0)
+impute_dat$Gender = NULL
+impute_dat$non_white = ifelse(impute_dat$RaceEthnicity == 3,0,1)
+impute_dat$RaceEthnicity = NULL
+impute_dat$sexual_minority = ifelse(impute_dat$SexualOrientation == 5,0,1)
+impute_dat$SexualOrientation = NULL
+
+impute_dat[,30:39] = NULL
+
+a.out = amelia(x = impute_dat, m = 5, noms = c("TXPackageAssigned" ,"female", "HispanicLatino", "non_white", "sexual_minority", "CurrentlyEngaged", "Attend75Referrals", "CrisisPlan80Time"), logs = c("ReferralsEngaged", "ReferralsProvided", "HoursPsychotherapy"))
+compare.density(a.out, var = "non_white")
+summary(a.out)
+disperse(a.out)
+
+impute_dat_loop = a.out$imputations
+### Create difference scores
+out_diff_dat = list()
+for(i in 1:length(impute_dat_loop)){
+  out_diff_dat[[i]] = impute_dat_loop[[i]][20:29]-impute_dat_loop[[i]][10:19]
+  colnames(out_diff_dat[[i]]) = c("RAS_1_diff", "RAS_2_diff", "RAS_3_diff", "RAS_5_diff", "INQ_1_diff", "INQ_2_diff", "SSMI_diff", "SIS_1_diff", "SIS_2_diff", "PHQ9_diff")
+  out_diff_dat[[i]] =cbind(impute_dat_loop[[i]], out_diff_dat[[i]])
+}
+
+one_loop_results = list()
+for(i in 1:length(out_diff_dat)){
+  #one_loop_results[[i]]=lm(RAS_1_diff ~ factor(TXPackageAssigned), data = out_diff_dat[[i]])
+  one_loop_results[[i]]=lm(cbind(RAS_1_diff, RAS_2_diff,RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SSMI_diff, SIS_1_diff, SIS_2_diff, PHQ9_diff) ~ factor(TXPackageAssigned), data = out_diff_dat[[i]])
+}
+one_loop_results
 ```
 
 

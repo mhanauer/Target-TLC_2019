@@ -763,6 +763,67 @@ for(i in 1:length(impute_target_between_results_1)){
 }
 mean_con_bewteen_d1 = unlist(mean_con_bewteen_d1)
 se_con_between_d1 = unlist(se_con_between_d1)
+
+
+se_con_between_d2 = list()
+mean_con_bewteen_d2 = list()
+for(i in 1:length(impute_target_between_results_2)){
+  se_con_between_d2[[i]] = vcov(impute_target_between_results_2[[i]])
+  se_con_between_d2[[i]] = sqrt((se_con_between_d2[[i]][,2:3][2]+se_con_between_d2[[i]][,2:3][6])-2*se_con_between_d2[[i]][,2:3][3])
+  ## Now get difference
+  mean_con_bewteen_d2[[i]] = impute_target_between_results_2[[i]]$coefficients[2:3,1]
+  mean_con_bewteen_d2[[i]] = data.frame(t(mean_con_bewteen_d2[[i]]))
+  mean_con_bewteen_d2[[i]] = mean_con_bewteen_d2[[i]]$factor.treatment.2-mean_con_bewteen_d2[[i]]$factor.treatment.3
+}
+mean_con_bewteen_d2 = unlist(mean_con_bewteen_d2)
+se_con_between_d2 = unlist(se_con_between_d2)
+
+se_con_between_d3 = list()
+mean_con_bewteen_d3 = list()
+for(i in 1:length(impute_target_between_results_3)){
+  se_con_between_d3[[i]] = vcov(impute_target_between_results_3[[i]])
+  se_con_between_d3[[i]] = sqrt((se_con_between_d3[[i]][,2:3][2]+se_con_between_d3[[i]][,2:3][6])-2*se_con_between_d3[[i]][,2:3][3])
+  ## Now get difference
+  mean_con_bewteen_d3[[i]] = impute_target_between_results_3[[i]]$coefficients[2:3,1]
+  mean_con_bewteen_d3[[i]] = data.frame(t(mean_con_bewteen_d3[[i]]))
+  mean_con_bewteen_d3[[i]] = mean_con_bewteen_d3[[i]]$factor.treatment.2-mean_con_bewteen_d3[[i]]$factor.treatment.3
+}
+mean_con_bewteen_d3 = unlist(mean_con_bewteen_d3)
+se_con_between_d3 = unlist(se_con_between_d3)
+
+se_con_between_d4 = list()
+mean_con_bewteen_d4 = list()
+for(i in 1:length(impute_target_between_results_4)){
+  se_con_between_d4[[i]] = vcov(impute_target_between_results_4[[i]])
+  se_con_between_d4[[i]] = sqrt((se_con_between_d4[[i]][,2:3][2]+se_con_between_d4[[i]][,2:3][6])-2*se_con_between_d4[[i]][,2:3][3])
+  ## Now get difference
+  mean_con_bewteen_d4[[i]] = impute_target_between_results_4[[i]]$coefficients[2:3,1]
+  mean_con_bewteen_d4[[i]] = data.frame(t(mean_con_bewteen_d4[[i]]))
+  mean_con_bewteen_d4[[i]] = mean_con_bewteen_d4[[i]]$factor.treatment.2-mean_con_bewteen_d4[[i]]$factor.treatment.3
+}
+mean_con_bewteen_d4 = unlist(mean_con_bewteen_d4)
+se_con_between_d4 = unlist(se_con_between_d4)
+
+se_con_between_d5 = list()
+mean_con_bewteen_d5 = list()
+for(i in 1:length(impute_target_between_results_5)){
+  se_con_between_d5[[i]] = vcov(impute_target_between_results_5[[i]])
+  se_con_between_d5[[i]] = sqrt((se_con_between_d5[[i]][,2:3][2]+se_con_between_d5[[i]][,2:3][6])-2*se_con_between_d5[[i]][,2:3][3])
+  ## Now get difference
+  mean_con_bewteen_d5[[i]] = impute_target_between_results_5[[i]]$coefficients[2:3,1]
+  mean_con_bewteen_d5[[i]] = data.frame(t(mean_con_bewteen_d5[[i]]))
+  mean_con_bewteen_d5[[i]] = mean_con_bewteen_d5[[i]]$factor.treatment.2-mean_con_bewteen_d5[[i]]$factor.treatment.3
+}
+mean_con_bewteen_d5 = unlist(mean_con_bewteen_d5)
+se_con_between_d5 = unlist(se_con_between_d5)
+
+mean_con_bewteen = rbind(mean_con_bewteen_d1, mean_con_bewteen_d2, mean_con_bewteen_d3, mean_con_bewteen_d4, mean_con_bewteen_d5)
+
+se_con_between = rbind(se_con_between_d1, se_con_between_d2, se_con_between_d3, se_con_between_d4, se_con_between_d5)
+
+
+con_between = mi.meld(mean_con_bewteen, se_con_between)
+con_between
 ```
 
 

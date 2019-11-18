@@ -391,12 +391,609 @@ tlc_target_dat = rbind(target_dat_com, tlc_dat_com)
 tlc_target_dat
 
 ```
-#######################
-Now get imputted data
-#######################
+################################
+Now get quasi imputed data set
+################################
 ```{r}
+############ Review missing data
+miss_var_summary(tlc_target_dat)
+
+
+quasi_itt =  apply(tlc_target_dat, 1, function(x)(sum(is.na(x))))
+quasi_itt_dat = data.frame(tlc_target_dat,quasi_itt)
+describe.factor(quasi_itt_dat$quasi_itt)
+### Ten variables and threshold is less than 50% 
+dim(quasi_itt_dat)[2]/2
+quasi_itt_dat = subset(quasi_itt_dat, quasi_itt < dim(quasi_itt_dat)[2]/2)
+dim(tlc_target_dat)
+dim(quasi_itt_dat)
+quasi_itt_dat$quasi_itt = NULL
+tlc_target_dat
 
 ```
 
 
+#######################
+Now get imputted data
+#######################
+```{r}
+library(Amelia)
+head(quasi_itt_dat)
+sum(is.na(quasi_itt_dat))
+prop_miss_case(quasi_itt_dat)
+a.out = amelia(x=quasi_itt_dat, m = 5, noms = c("treatment", "female", "non_white", "sexual_minority"))
+summary(a.out)
+impute_dat_loop = a.out$imputations
 
+
+```
+##############
+Within between TLC and Target
+So regression with stand diff score and target at indicator
+##############################
+```{r}
+### Create difference scores
+
+
+out_diff_dat = list()
+impute_dat_loop[[1]][7:14]
+for(i in 1:length(impute_dat_loop)){
+  out_diff_dat[[i]] = impute_dat_loop[[i]][15:22]-impute_dat_loop[[i]][7:14]
+  colnames(out_diff_dat[[i]]) = c("RAS_1_diff", "RAS_2_diff", "RAS_3_diff", "RAS_5_diff", "INQ_1_diff", "INQ_2_diff", "SIS_1_diff", "SSMI_diff")
+  out_diff_dat[[i]] = scale(out_diff_dat[[i]])
+  out_diff_dat[[i]] =cbind(impute_dat_loop[[i]], out_diff_dat[[i]])
+}
+out_diff_dat[[1]]
+
+
+```
+####################
+Within between target
+#####################
+```{r}
+
+impute_dat_loop_t1= list()
+impute_dat_loop_t2= list()
+impute_dat_loop_t3= list()
+
+for(i in 1:length(out_diff_dat)){
+  impute_dat_loop_t1[[i]] = subset(out_diff_dat[[i]], treatment == 1)
+  impute_dat_loop_t2[[i]] = subset(out_diff_dat[[i]], treatment == 2)
+  impute_dat_loop_t3[[i]] = subset(out_diff_dat[[i]], treatment == 3)
+}
+dim(impute_dat_loop_t1[[1]])
+
+impute_tlc_target_within_results_t1 = list()
+for(i in 1:length(impute_dat_loop_t1)){
+  impute_tlc_target_within_results_t1[[i]]=lm(cbind(RAS_1_diff, RAS_2_diff,RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SIS_1_diff, SSMI_diff) ~ target, data = impute_dat_loop_t1[[i]])
+}
+
+impute_tlc_target_within_results_t1_d1 = summary(impute_tlc_target_within_results_t1[[1]])
+impute_tlc_target_within_results_t1_d2 = summary(impute_tlc_target_within_results_t1[[2]])
+impute_tlc_target_within_results_t1_d3 = summary(impute_tlc_target_within_results_t1[[3]])
+impute_tlc_target_within_results_t1_d4 = summary(impute_tlc_target_within_results_t1[[4]])
+impute_tlc_target_within_results_t1_d5 = summary(impute_tlc_target_within_results_t1[[5]])
+
+impute_tlc_target_within_results_t1_d1
+
+coefs_1_d1 = list()
+ses_1_d1 = list()
+for(i in 1:length(impute_tlc_target_within_results_t1_d1)){
+  coefs_1_d1[[i]] = impute_tlc_target_within_results_t1_d1[[i]]$coefficients[2,1]
+  ses_1_d1[[i]] = impute_tlc_target_within_results_t1_d1[[i]]$coefficients[1,2]
+}
+coefs_1_d1
+coefs_1_d1 = unlist(coefs_1_d1)
+coefs_1_d1 = matrix(coefs_1_d1, ncol = 8)
+coefs_1_d1
+
+ses_1_d1
+ses_1_d1 = unlist(ses_1_d1)
+ses_1_d1 = matrix(ses_1_d1, ncol = 8)
+ses_1_d1
+
+coefs_1_d2 = list()
+ses_1_d2 = list()
+for(i in 1:length(impute_tlc_target_within_results_t1_d2)){
+  coefs_1_d2[[i]] = impute_tlc_target_within_results_t1_d2[[i]]$coefficients[2,1]
+  ses_1_d2[[i]] = impute_tlc_target_within_results_t1_d2[[i]]$coefficients[1,2]
+}
+coefs_1_d2
+coefs_1_d2 = unlist(coefs_1_d2)
+coefs_1_d2 = matrix(coefs_1_d2, ncol = 8)
+coefs_1_d2
+
+ses_1_d2
+ses_1_d2 = unlist(ses_1_d2)
+ses_1_d2 = matrix(ses_1_d2, ncol = 8)
+ses_1_d2
+
+
+coefs_1_d3 = list()
+ses_1_d3 = list()
+for(i in 1:length(impute_tlc_target_within_results_t1_d3)){
+  coefs_1_d3[[i]] = impute_tlc_target_within_results_t1_d3[[i]]$coefficients[2,1]
+  ses_1_d3[[i]] = impute_tlc_target_within_results_t1_d3[[i]]$coefficients[1,2]
+}
+coefs_1_d3
+coefs_1_d3 = unlist(coefs_1_d3)
+coefs_1_d3 = matrix(coefs_1_d3, ncol = 8)
+coefs_1_d3
+
+ses_1_d3
+ses_1_d3 = unlist(ses_1_d3)
+ses_1_d3 = matrix(ses_1_d3, ncol = 8)
+ses_1_d3
+
+coefs_1_d4 = list()
+ses_1_d4 = list()
+for(i in 1:length(impute_tlc_target_within_results_t1_d4)){
+  coefs_1_d4[[i]] = impute_tlc_target_within_results_t1_d4[[i]]$coefficients[2,1]
+  ses_1_d4[[i]] = impute_tlc_target_within_results_t1_d4[[i]]$coefficients[1,2]
+}
+coefs_1_d4
+coefs_1_d4 = unlist(coefs_1_d4)
+coefs_1_d4 = matrix(coefs_1_d4, ncol = 8)
+coefs_1_d4
+
+ses_1_d4
+ses_1_d4 = unlist(ses_1_d4)
+ses_1_d4 = matrix(ses_1_d4, ncol = 8)
+ses_1_d4
+
+
+coefs_1_d5 = list()
+ses_1_d5 = list()
+for(i in 1:length(impute_tlc_target_within_results_t1_d5)){
+  coefs_1_d5[[i]] = impute_tlc_target_within_results_t1_d5[[i]]$coefficients[2,1]
+  ses_1_d5[[i]] = impute_tlc_target_within_results_t1_d5[[i]]$coefficients[1,2]
+}
+coefs_1_d5
+coefs_1_d5 = unlist(coefs_1_d5)
+coefs_1_d5 = matrix(coefs_1_d5, ncol = 8)
+coefs_1_d5
+
+ses_1_d5
+ses_1_d5 = unlist(ses_1_d5)
+ses_1_d5 = matrix(ses_1_d5, ncol = 8)
+ses_1_d5
+
+
+########## Combine all data
+coefs_1_all = rbind(coefs_1_d1, coefs_1_d2, coefs_1_d3, coefs_1_d4, coefs_1_d5)
+ses_1_all = rbind(ses_1_d1, ses_1_d2, ses_1_d3, ses_1_d4, ses_1_d5)
+
+coefs_1_ses =  mi.meld(coefs_1_all,ses_1_all)
+t_stats_1 = coefs_1_ses$q.mi / coefs_1_ses$se.mi
+t_stats_1
+#p-value
+p_values_1 = round(2*pt(-abs(t_stats_1), df = dim(impute_dat_loop_t1[[1]])[1]-2),3)
+p_values_1
+#Critical t
+critical_ts_1= abs(qt(0.0167/2, dim(impute_dat_loop_t1[[1]])[1]-2))
+critical_ts_1
+
+#95 CI's
+upper_1 = round(coefs_1_ses$q.mi+(critical_ts_1*coefs_1_ses$se.mi),3)
+lower_1 = round(coefs_1_ses$q.mi-(critical_ts_1*coefs_1_ses$se.mi),3)
+ci_95_1 = paste0(lower_1, sep=",", upper_1)
+
+tlc_target_within_results_t1 = data.frame(t(coefs_1_ses$q.mi), t(coefs_1_ses$se.mi), t(p_values_1), ci_95_1)
+colnames(tlc_target_within_results_t1) = c("par_estimate", "se", "p_value", "ci_95")
+tlc_target_within_results_t1[,1:2] = round(tlc_target_within_results_t1[,1:2], 3)
+tlc_target_within_results_t1$par_estimate = ifelse(tlc_target_within_results_t1$p_value < .0167, paste0(tlc_target_within_results_t1$par_estimate, "*"), tlc_target_within_results_t1$par_estimate)
+
+tlc_target_within_results_t1$p_value = ifelse(tlc_target_within_results_t1$p_value < .0009, "<.001", tlc_target_within_results_t1$p_value)
+tlc_target_within_results_t1
+
+
+####### T2 within
+impute_tlc_target_within_results_t2 = list()
+for(i in 1:length(impute_dat_loop_t2)){
+  impute_tlc_target_within_results_t2[[i]]=lm(cbind(RAS_1_diff, RAS_2_diff,RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SIS_1_diff, SSMI_diff) ~ target, data = impute_dat_loop_t2[[i]])
+}
+
+impute_tlc_target_within_results_t2_d1 = summary(impute_tlc_target_within_results_t2[[1]])
+impute_tlc_target_within_results_t2_d2 = summary(impute_tlc_target_within_results_t2[[2]])
+impute_tlc_target_within_results_t2_d3 = summary(impute_tlc_target_within_results_t2[[3]])
+impute_tlc_target_within_results_t2_d4 = summary(impute_tlc_target_within_results_t2[[4]])
+impute_tlc_target_within_results_t2_d5 = summary(impute_tlc_target_within_results_t2[[5]])
+
+impute_tlc_target_within_results_t2_d1
+
+coefs_2_d1 = list()
+ses_2_d1 = list()
+
+
+for(i in 1:length(impute_tlc_target_within_results_t2_d1)){
+  coefs_2_d1[[i]] = impute_tlc_target_within_results_t2_d1[[i]]$coefficients[2,1]
+  ses_2_d1[[i]] = impute_tlc_target_within_results_t2_d1[[i]]$coefficients[1,2]
+}
+coefs_2_d1
+coefs_2_d1 = unlist(coefs_2_d1)
+coefs_2_d1 = matrix(coefs_2_d1, ncol = 8)
+coefs_2_d1
+
+ses_2_d1
+ses_2_d1 = unlist(ses_2_d1)
+ses_2_d1 = matrix(ses_2_d1, ncol = 8)
+ses_2_d1
+
+coefs_2_d2 = list()
+ses_2_d2 = list()
+for(i in 1:length(impute_tlc_target_within_results_t2_d2)){
+  coefs_2_d2[[i]] = impute_tlc_target_within_results_t2_d2[[i]]$coefficients[2,1]
+  ses_2_d2[[i]] = impute_tlc_target_within_results_t2_d2[[i]]$coefficients[1,2]
+}
+coefs_2_d2
+coefs_2_d2 = unlist(coefs_2_d2)
+coefs_2_d2 = matrix(coefs_2_d2, ncol = 8)
+coefs_2_d2
+
+ses_2_d2
+ses_2_d2 = unlist(ses_2_d2)
+ses_2_d2 = matrix(ses_2_d2, ncol = 8)
+ses_2_d2
+
+
+coefs_2_d3 = list()
+ses_2_d3 = list()
+for(i in 1:length(impute_tlc_target_within_results_t2_d3)){
+  coefs_2_d3[[i]] = impute_tlc_target_within_results_t2_d3[[i]]$coefficients[2,1]
+  ses_2_d3[[i]] = impute_tlc_target_within_results_t2_d3[[i]]$coefficients[1,2]
+}
+coefs_2_d3
+coefs_2_d3 = unlist(coefs_2_d3)
+coefs_2_d3 = matrix(coefs_2_d3, ncol = 8)
+coefs_2_d3
+
+ses_2_d3
+ses_2_d3 = unlist(ses_2_d3)
+ses_2_d3 = matrix(ses_2_d3, ncol = 8)
+ses_2_d3
+
+coefs_2_d4 = list()
+ses_2_d4 = list()
+for(i in 1:length(impute_tlc_target_within_results_t2_d4)){
+  coefs_2_d4[[i]] = impute_tlc_target_within_results_t2_d4[[i]]$coefficients[2,1]
+  ses_2_d4[[i]] = impute_tlc_target_within_results_t2_d4[[i]]$coefficients[1,2]
+}
+coefs_2_d4
+coefs_2_d4 = unlist(coefs_2_d4)
+coefs_2_d4 = matrix(coefs_2_d4, ncol = 8)
+coefs_2_d4
+
+ses_2_d4
+ses_2_d4 = unlist(ses_2_d4)
+ses_2_d4 = matrix(ses_2_d4, ncol = 8)
+ses_2_d4
+
+
+coefs_2_d5 = list()
+ses_2_d5 = list()
+for(i in 1:length(impute_tlc_target_within_results_t2_d5)){
+  coefs_2_d5[[i]] = impute_tlc_target_within_results_t2_d5[[i]]$coefficients[2,1]
+  ses_2_d5[[i]] = impute_tlc_target_within_results_t2_d5[[i]]$coefficients[1,2]
+}
+coefs_2_d5
+coefs_2_d5 = unlist(coefs_2_d5)
+coefs_2_d5 = matrix(coefs_2_d5, ncol = 8)
+coefs_2_d5
+
+ses_2_d5
+ses_2_d5 = unlist(ses_2_d5)
+ses_2_d5 = matrix(ses_2_d5, ncol = 8)
+ses_2_d5
+
+
+########## Combine all data
+coefs_2_all = rbind(coefs_2_d1, coefs_2_d2, coefs_2_d3, coefs_2_d4, coefs_2_d5)
+ses_2_all = rbind(ses_2_d1, ses_2_d2, ses_2_d3, ses_2_d4, ses_2_d5)
+
+coefs_2_ses =  mi.meld(coefs_2_all,ses_2_all)
+t_stats_2 = coefs_2_ses$q.mi / coefs_2_ses$se.mi
+t_stats_2
+#p-value
+p_values_2 = round(2*pt(-abs(t_stats_2), df = dim(impute_dat_loop_t2[[1]])[1]-2),3)
+p_values_2
+#Critical t
+critical_ts_2= abs(qt(0.0167/2, dim(impute_dat_loop_t2[[1]])[1]-2))
+critical_ts_2
+
+#95 CI's
+upper_2 = round(coefs_2_ses$q.mi+(critical_ts_2*coefs_2_ses$se.mi),3)
+lower_2 = round(coefs_2_ses$q.mi-(critical_ts_2*coefs_2_ses$se.mi),3)
+ci_95_2 = paste0(lower_2, sep=",", upper_2)
+
+tlc_target_within_results_t2 = data.frame(t(coefs_2_ses$q.mi), t(coefs_2_ses$se.mi), t(p_values_2), ci_95_2)
+colnames(tlc_target_within_results_t2) = c("par_estimate", "se", "p_value", "ci_95")
+tlc_target_within_results_t2[,1:2] = round(tlc_target_within_results_t2[,1:2], 3)
+tlc_target_within_results_t2$par_estimate = ifelse(tlc_target_within_results_t2$p_value < .0167, paste0(tlc_target_within_results_t2$par_estimate, "*"), tlc_target_within_results_t2$par_estimate)
+
+tlc_target_within_results_t2$p_value = ifelse(tlc_target_within_results_t2$p_value < .0009, "<.001", tlc_target_within_results_t2$p_value)
+tlc_target_within_results_t2
+
+########## T3 within
+impute_tlc_target_within_results_t3 = list()
+for(i in 1:length(impute_dat_loop_t3)){
+  impute_tlc_target_within_results_t3[[i]]=lm(cbind(RAS_1_diff, RAS_3_diff,RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SIS_1_diff, SSMI_diff) ~ target, data = impute_dat_loop_t3[[i]])
+}
+
+impute_tlc_target_within_results_t3_d1 = summary(impute_tlc_target_within_results_t3[[1]])
+impute_tlc_target_within_results_t3_d2 = summary(impute_tlc_target_within_results_t3[[2]])
+impute_tlc_target_within_results_t3_d3 = summary(impute_tlc_target_within_results_t3[[3]])
+impute_tlc_target_within_results_t3_d4 = summary(impute_tlc_target_within_results_t3[[4]])
+impute_tlc_target_within_results_t3_d5 = summary(impute_tlc_target_within_results_t3[[5]])
+
+impute_tlc_target_within_results_t3_d1
+
+coefs_3_d1 = list()
+ses_3_d1 = list()
+
+
+for(i in 1:length(impute_tlc_target_within_results_t3_d1)){
+  coefs_3_d1[[i]] = impute_tlc_target_within_results_t3_d1[[i]]$coefficients[2,1]
+  ses_3_d1[[i]] = impute_tlc_target_within_results_t3_d1[[i]]$coefficients[1,2]
+}
+coefs_3_d1
+coefs_3_d1 = unlist(coefs_3_d1)
+coefs_3_d1 = matrix(coefs_3_d1, ncol = 8)
+coefs_3_d1
+
+ses_3_d1
+ses_3_d1 = unlist(ses_3_d1)
+ses_3_d1 = matrix(ses_3_d1, ncol = 8)
+ses_3_d1
+
+coefs_3_d2 = list()
+ses_3_d2 = list()
+for(i in 1:length(impute_tlc_target_within_results_t3_d2)){
+  coefs_3_d2[[i]] = impute_tlc_target_within_results_t3_d2[[i]]$coefficients[2,1]
+  ses_3_d2[[i]] = impute_tlc_target_within_results_t3_d2[[i]]$coefficients[1,2]
+}
+coefs_3_d2
+coefs_3_d2 = unlist(coefs_3_d2)
+coefs_3_d2 = matrix(coefs_3_d2, ncol = 8)
+coefs_3_d2
+
+ses_3_d2
+ses_3_d2 = unlist(ses_3_d2)
+ses_3_d2 = matrix(ses_3_d2, ncol = 8)
+ses_3_d2
+
+
+coefs_3_d3 = list()
+ses_3_d3 = list()
+for(i in 1:length(impute_tlc_target_within_results_t3_d3)){
+  coefs_3_d3[[i]] = impute_tlc_target_within_results_t3_d3[[i]]$coefficients[2,1]
+  ses_3_d3[[i]] = impute_tlc_target_within_results_t3_d3[[i]]$coefficients[1,2]
+}
+coefs_3_d3
+coefs_3_d3 = unlist(coefs_3_d3)
+coefs_3_d3 = matrix(coefs_3_d3, ncol = 8)
+coefs_3_d3
+
+ses_3_d3
+ses_3_d3 = unlist(ses_3_d3)
+ses_3_d3 = matrix(ses_3_d3, ncol = 8)
+ses_3_d3
+
+coefs_3_d4 = list()
+ses_3_d4 = list()
+for(i in 1:length(impute_tlc_target_within_results_t3_d4)){
+  coefs_3_d4[[i]] = impute_tlc_target_within_results_t3_d4[[i]]$coefficients[2,1]
+  ses_3_d4[[i]] = impute_tlc_target_within_results_t3_d4[[i]]$coefficients[1,2]
+}
+coefs_3_d4
+coefs_3_d4 = unlist(coefs_3_d4)
+coefs_3_d4 = matrix(coefs_3_d4, ncol = 8)
+coefs_3_d4
+
+ses_3_d4
+ses_3_d4 = unlist(ses_3_d4)
+ses_3_d4 = matrix(ses_3_d4, ncol = 8)
+ses_3_d4
+
+
+coefs_3_d5 = list()
+ses_3_d5 = list()
+for(i in 1:length(impute_tlc_target_within_results_t3_d5)){
+  coefs_3_d5[[i]] = impute_tlc_target_within_results_t3_d5[[i]]$coefficients[2,1]
+  ses_3_d5[[i]] = impute_tlc_target_within_results_t3_d5[[i]]$coefficients[1,2]
+}
+coefs_3_d5
+coefs_3_d5 = unlist(coefs_3_d5)
+coefs_3_d5 = matrix(coefs_3_d5, ncol = 8)
+coefs_3_d5
+
+ses_3_d5
+ses_3_d5 = unlist(ses_3_d5)
+ses_3_d5 = matrix(ses_3_d5, ncol = 8)
+ses_3_d5
+
+
+########## Combine all data
+coefs_3_all = rbind(coefs_3_d1, coefs_3_d2, coefs_3_d3, coefs_3_d4, coefs_3_d5)
+ses_3_all = rbind(ses_3_d1, ses_3_d2, ses_3_d3, ses_3_d4, ses_3_d5)
+
+coefs_3_ses =  mi.meld(coefs_3_all,ses_3_all)
+t_stats_3 = coefs_3_ses$q.mi / coefs_3_ses$se.mi
+t_stats_3
+#p-value
+p_values_3 = round(2*pt(-abs(t_stats_3), df = dim(impute_dat_loop_t3[[1]])[1]-2),3)
+p_values_3
+#Critical t
+critical_ts_3= abs(qt(0.0167/2, dim(impute_dat_loop_t3[[1]])[1]-2))
+critical_ts_3
+
+#95 CI's
+upper_3 = round(coefs_3_ses$q.mi+(critical_ts_3*coefs_3_ses$se.mi),3)
+lower_3 = round(coefs_3_ses$q.mi-(critical_ts_3*coefs_3_ses$se.mi),3)
+ci_95_3 = paste0(lower_3, sep=",", upper_3)
+
+tlc_target_within_results_t3 = data.frame(t(coefs_3_ses$q.mi), t(coefs_3_ses$se.mi), t(p_values_3), ci_95_3)
+colnames(tlc_target_within_results_t3) = c("par_estimate", "se", "p_value", "ci_95")
+tlc_target_within_results_t3[,1:2] = round(tlc_target_within_results_t3[,1:2], 3)
+tlc_target_within_results_t3$par_estimate = ifelse(tlc_target_within_results_t3$p_value < .0167, paste0(tlc_target_within_results_t3$par_estimate, "*"), tlc_target_within_results_t3$par_estimate)
+
+tlc_target_within_results_t3$p_value = ifelse(tlc_target_within_results_t3$p_value < .0009, "<.001", tlc_target_within_results_t3$p_value)
+tlc_target_within_results_t3
+
+### Combine all results
+tlc_target_within_results_all = rbind(tlc_target_within_results_t1, tlc_target_within_results_t2, tlc_target_within_results_t3)
+tlc_target_within_results_all
+```
+###########################
+Between tlc target analysis
+###########################
+```{r}
+impute_tlc_target_between_results = list()
+for(i in 1:length(out_diff_dat)){
+  impute_tlc_target_between_results[[i]]=lm(cbind(RAS_1_diff, RAS_2_diff,RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SIS_1_diff, SSMI_diff) ~ target*factor(treatment), data = out_diff_dat[[i]])
+}
+impute_tlc_target_between_results[[1]]
+impute_tlc_target_between_results_d1 = summary(impute_tlc_target_between_results[[1]])
+impute_tlc_target_between_results_d2 = summary(impute_tlc_target_between_results[[2]])
+impute_tlc_target_between_results_d3 = summary(impute_tlc_target_between_results[[3]])
+impute_tlc_target_between_results_d4 = summary(impute_tlc_target_between_results[[4]])
+impute_tlc_target_between_results_d5 = summary(impute_tlc_target_between_results[[5]])
+impute_tlc_target_between_results_d1
+
+impute_tlc_target_between_results_d1[[1]]$coefficients[5:6,1]
+
+coefs_d1 = list()
+ses_d1 = list()
+for(i in 1:length(impute_tlc_target_between_results_d1)){
+  coefs_d1[[i]] = impute_tlc_target_between_results_d1[[i]]$coefficients[5:6,1]
+  ses_d1[[i]] = impute_tlc_target_between_results_d1[[i]]$coefficients[5:6,2]
+}
+
+coefs_d1 = unlist(coefs_d1)
+coefs_d1 = matrix(coefs_d1, ncol = 2, byrow =TRUE)  
+coefs_d1_t1vt2 = coefs_d1[,1]
+coefs_d1_t1vt3 = coefs_d1[,2]
+t(coefs_d1_t1vt3)
+ses_d1 = unlist(ses_d1)
+ses_d1 = matrix(ses_d1, ncol = 2, byrow =TRUE)  
+ses_d1_t1vt2 = ses_d1[,1]
+ses_d1_t1vt3 = ses_d1[,1]
+
+### D2
+coefs_d2 = list()
+ses_d2 = list()
+for(i in 1:length(impute_tlc_target_between_results_d2)){
+  coefs_d2[[i]] = impute_tlc_target_between_results_d2[[i]]$coefficients[5:6,1]
+  ses_d2[[i]] = impute_tlc_target_between_results_d2[[i]]$coefficients[5:6,2]
+}
+
+
+coefs_d2 = unlist(coefs_d2)
+coefs_d2 = matrix(coefs_d2, ncol = 2, byrow =TRUE)  
+coefs_d2_t1vt2 = coefs_d2[,1]
+coefs_d2_t1vt3 = coefs_d2[,2]
+t(coefs_d2_t1vt3)
+ses_d2 = unlist(ses_d2)
+ses_d2 = matrix(ses_d2, ncol = 2, byrow =TRUE)  
+ses_d2_t1vt2 = ses_d2[,1]
+ses_d2_t1vt3 = ses_d2[,1]
+
+
+### D3
+coefs_d3 = list()
+ses_d3 = list()
+for(i in 1:length(impute_tlc_target_between_results_d3)){
+  coefs_d3[[i]] = impute_tlc_target_between_results_d3[[i]]$coefficients[5:6,1]
+  ses_d3[[i]] = impute_tlc_target_between_results_d3[[i]]$coefficients[5:6,2]
+}
+
+
+coefs_d3 = unlist(coefs_d3)
+coefs_d3 = matrix(coefs_d3, ncol = 2, byrow =TRUE)  
+coefs_d3_t1vt2 = coefs_d3[,1]
+coefs_d3_t1vt3 = coefs_d3[,2]
+t(coefs_d3_t1vt3)
+ses_d3 = unlist(ses_d3)
+ses_d3 = matrix(ses_d3, ncol = 2, byrow =TRUE)  
+ses_d3_t1vt2 = ses_d3[,1]
+ses_d3_t1vt3 = ses_d3[,1]
+
+
+
+coefs_d4 = list()
+ses_d4 = list()
+for(i in 1:length(impute_tlc_target_between_results_d4)){
+  coefs_d4[[i]] = impute_tlc_target_between_results_d4[[i]]$coefficients[5:6,1]
+  ses_d4[[i]] = impute_tlc_target_between_results_d4[[i]]$coefficients[5:6,2]
+}
+
+
+coefs_d4 = unlist(coefs_d4)
+coefs_d4 = matrix(coefs_d4, ncol = 2, byrow =TRUE)  
+coefs_d4_t1vt2 = coefs_d4[,1]
+coefs_d4_t1vt3 = coefs_d4[,2]
+t(coefs_d4_t1vt3)
+ses_d4 = unlist(ses_d4)
+ses_d4 = matrix(ses_d4, ncol = 2, byrow =TRUE)  
+ses_d4_t1vt2 = ses_d4[,1]
+ses_d4_t1vt3 = ses_d4[,1]
+
+coefs_d5 = list()
+ses_d5 = list()
+for(i in 1:length(impute_tlc_target_between_results_d5)){
+  coefs_d5[[i]] = impute_tlc_target_between_results_d5[[i]]$coefficients[5:6,1]
+  ses_d5[[i]] = impute_tlc_target_between_results_d5[[i]]$coefficients[5:6,2]
+}
+impute_tlc_target_between_results_d1
+coefs_d5 = unlist(coefs_d5)
+coefs_d5 = matrix(coefs_d5, ncol = 2, byrow =TRUE)  
+coefs_d5_t1vt2 = coefs_d5[,1]
+coefs_d5_t1vt3 = coefs_d5[,2]
+t(coefs_d5_t1vt3)
+ses_d5 = unlist(ses_d5)
+ses_d5 = matrix(ses_d5, ncol = 2, byrow =TRUE)  
+ses_d5_t1vt2 = ses_d5[,1]
+ses_d5_t1vt3 = ses_d5[,1]
+
+
+coefs_all_t1vt2 = rbind(t(coefs_d1_t1vt2), t(coefs_d2_t1vt2), t(coefs_d3_t1vt2), t(coefs_d4_t1vt2), t(coefs_d5_t1vt2))
+coefs_all_t1vt3 = rbind(t(coefs_d1_t1vt3), t(coefs_d2_t1vt3), t(coefs_d3_t1vt3), t(coefs_d4_t1vt3), t(coefs_d5_t1vt3))
+coefs_all_t1vt2
+
+ses_all_t1vt2 = rbind(t(ses_d1_t1vt2), t(ses_d2_t1vt2), t(ses_d3_t1vt2), t(ses_d4_t1vt2), t(ses_d5_t1vt2))
+ses_all_t1vt3 = rbind(t(ses_d1_t1vt3), t(ses_d2_t1vt3), t(ses_d3_t1vt3), t(ses_d4_t1vt3), t(ses_d5_t1vt3))
+
+
+coefs_ses_t1vt2 =  mi.meld(coefs_all_t1vt2,ses_all_t1vt2)
+coefs_ses_t1vt3 =  mi.meld(coefs_all_t1vt3,ses_all_t1vt3)
+
+coefs_ses_t1vt2 = unlist(coefs_ses_t1vt2)
+coefs_ses_t1vt2 = matrix(coefs_ses_t1vt2, ncol = 2)
+coefs_ses_t1vt2
+
+coefs_ses_t1vt3 = unlist(coefs_ses_t1vt3)
+coefs_ses_t1vt3 = matrix(coefs_ses_t1vt3, ncol = 2)
+coefs_ses_t1vt3
+
+coefs_ses = rbind(coefs_ses_t1vt2, coefs_ses_t1vt3)
+colnames(coefs_ses) = c("q.mi", "se.mi") 
+coefs_ses = data.frame(coefs_ses)
+coefs_ses
+t_stats = coefs_ses$q.mi / coefs_ses$se.mi
+# n - minus 5 for parameters
+p_values = round(2*pt(-abs(t_stats), df = dim(out_diff_dat[[1]])[1]-5),3)
+#Critical t
+critical_ts= abs(qt(0.0167/2, df = dim(out_diff_dat[[1]])[1]-5)) 
+critical_ts
+upper = round(coefs_ses$q.mi+(critical_ts*coefs_ses$se.mi),3)
+lower = round(coefs_ses$q.mi-(critical_ts*coefs_ses$se.mi),3)
+ci_95 = paste0(lower, sep=",", upper)
+
+tlc_target_between_impute_results = data.frame( par_estimate = coefs_ses$q.mi, se = coefs_ses$se.mi, p_values, ci_95)
+tlc_target_between_impute_results[,1:2] = round(tlc_target_between_impute_results[,1:2], 3)
+tlc_target_between_impute_results
+
+tlc_target_between_impute_results$par_estimate = ifelse(tlc_target_between_impute_results$p_value < .0167, paste0(tlc_target_between_impute_results$par_estimate, "*"), tlc_target_between_impute_results$par_estimate)
+tlc_target_between_impute_results
+
+
+```

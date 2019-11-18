@@ -570,7 +570,7 @@ t_stats_1
 p_values_1 = round(2*pt(-abs(t_stats_1), df = dim(impute_dat_loop_t1[[1]])[1]-2),3)
 p_values_1
 #Critical t
-critical_ts_1= abs(qt(0.0167/2, dim(impute_dat_loop_t1[[1]])[1]-2))
+critical_ts_1= abs(qt(0.017/2, dim(impute_dat_loop_t1[[1]])[1]-2))
 critical_ts_1
 
 #95 CI's
@@ -581,7 +581,7 @@ ci_95_1 = paste0(lower_1, sep=",", upper_1)
 tlc_target_within_results_t1 = data.frame(t(coefs_1_ses$q.mi), t(coefs_1_ses$se.mi), t(p_values_1), ci_95_1)
 colnames(tlc_target_within_results_t1) = c("par_estimate", "se", "p_value", "ci_95")
 tlc_target_within_results_t1[,1:2] = round(tlc_target_within_results_t1[,1:2], 3)
-tlc_target_within_results_t1$par_estimate = ifelse(tlc_target_within_results_t1$p_value < .0167, paste0(tlc_target_within_results_t1$par_estimate, "*"), tlc_target_within_results_t1$par_estimate)
+tlc_target_within_results_t1$par_estimate = ifelse(tlc_target_within_results_t1$p_value < .017, paste0(tlc_target_within_results_t1$par_estimate, "*"), tlc_target_within_results_t1$par_estimate)
 
 tlc_target_within_results_t1$p_value = ifelse(tlc_target_within_results_t1$p_value < .0009, "<.001", tlc_target_within_results_t1$p_value)
 tlc_target_within_results_t1
@@ -697,7 +697,7 @@ t_stats_2
 p_values_2 = round(2*pt(-abs(t_stats_2), df = dim(impute_dat_loop_t2[[1]])[1]-2),3)
 p_values_2
 #Critical t
-critical_ts_2= abs(qt(0.0167/2, dim(impute_dat_loop_t2[[1]])[1]-2))
+critical_ts_2= abs(qt(0.017/2, dim(impute_dat_loop_t2[[1]])[1]-2))
 critical_ts_2
 
 #95 CI's
@@ -708,7 +708,7 @@ ci_95_2 = paste0(lower_2, sep=",", upper_2)
 tlc_target_within_results_t2 = data.frame(t(coefs_2_ses$q.mi), t(coefs_2_ses$se.mi), t(p_values_2), ci_95_2)
 colnames(tlc_target_within_results_t2) = c("par_estimate", "se", "p_value", "ci_95")
 tlc_target_within_results_t2[,1:2] = round(tlc_target_within_results_t2[,1:2], 3)
-tlc_target_within_results_t2$par_estimate = ifelse(tlc_target_within_results_t2$p_value < .0167, paste0(tlc_target_within_results_t2$par_estimate, "*"), tlc_target_within_results_t2$par_estimate)
+tlc_target_within_results_t2$par_estimate = ifelse(tlc_target_within_results_t2$p_value < .017, paste0(tlc_target_within_results_t2$par_estimate, "*"), tlc_target_within_results_t2$par_estimate)
 
 tlc_target_within_results_t2$p_value = ifelse(tlc_target_within_results_t2$p_value < .0009, "<.001", tlc_target_within_results_t2$p_value)
 tlc_target_within_results_t2
@@ -823,7 +823,7 @@ t_stats_3
 p_values_3 = round(2*pt(-abs(t_stats_3), df = dim(impute_dat_loop_t3[[1]])[1]-2),3)
 p_values_3
 #Critical t
-critical_ts_3= abs(qt(0.0167/2, dim(impute_dat_loop_t3[[1]])[1]-2))
+critical_ts_3= abs(qt(0.017/2, dim(impute_dat_loop_t3[[1]])[1]-2))
 critical_ts_3
 
 #95 CI's
@@ -834,7 +834,7 @@ ci_95_3 = paste0(lower_3, sep=",", upper_3)
 tlc_target_within_results_t3 = data.frame(t(coefs_3_ses$q.mi), t(coefs_3_ses$se.mi), t(p_values_3), ci_95_3)
 colnames(tlc_target_within_results_t3) = c("par_estimate", "se", "p_value", "ci_95")
 tlc_target_within_results_t3[,1:2] = round(tlc_target_within_results_t3[,1:2], 3)
-tlc_target_within_results_t3$par_estimate = ifelse(tlc_target_within_results_t3$p_value < .0167, paste0(tlc_target_within_results_t3$par_estimate, "*"), tlc_target_within_results_t3$par_estimate)
+tlc_target_within_results_t3$par_estimate = ifelse(tlc_target_within_results_t3$p_value < .017, paste0(tlc_target_within_results_t3$par_estimate, "*"), tlc_target_within_results_t3$par_estimate)
 
 tlc_target_within_results_t3$p_value = ifelse(tlc_target_within_results_t3$p_value < .0009, "<.001", tlc_target_within_results_t3$p_value)
 tlc_target_within_results_t3
@@ -982,7 +982,7 @@ t_stats = coefs_ses$q.mi / coefs_ses$se.mi
 # n - minus 5 for parameters
 p_values = round(2*pt(-abs(t_stats), df = dim(out_diff_dat[[1]])[1]-5),3)
 #Critical t
-critical_ts= abs(qt(0.0167/2, df = dim(out_diff_dat[[1]])[1]-5)) 
+critical_ts= abs(qt(0.017/2, df = dim(out_diff_dat[[1]])[1]-5)) 
 critical_ts
 upper = round(coefs_ses$q.mi+(critical_ts*coefs_ses$se.mi),3)
 lower = round(coefs_ses$q.mi-(critical_ts*coefs_ses$se.mi),3)
@@ -992,8 +992,141 @@ tlc_target_between_impute_results = data.frame( par_estimate = coefs_ses$q.mi, s
 tlc_target_between_impute_results[,1:2] = round(tlc_target_between_impute_results[,1:2], 3)
 tlc_target_between_impute_results
 
-tlc_target_between_impute_results$par_estimate = ifelse(tlc_target_between_impute_results$p_value < .0167, paste0(tlc_target_between_impute_results$par_estimate, "*"), tlc_target_between_impute_results$par_estimate)
+tlc_target_between_impute_results$par_estimate = ifelse(tlc_target_between_impute_results$p_value < .017, paste0(tlc_target_between_impute_results$par_estimate, "*"), tlc_target_between_impute_results$par_estimate)
 tlc_target_between_impute_results
 
 
 ```
+########## 
+Get contrasts
+###########
+```{r}
+se_con_between_d1 = list()
+mean_con_bewteen_d1 = list()
+for(i in 1:length(impute_tlc_target_between_results_d1)){
+  se_con_between_d1[[i]] = vcov(impute_tlc_target_between_results_d1[[i]])
+  se_con_between_d1[[i]] = sqrt((se_con_between_d1[[i]][5,5]+se_con_between_d1[[i]][6,6])-2*se_con_between_d1[[i]][6,5])
+  ## Now get difference
+  mean_con_bewteen_d1[[i]] = impute_tlc_target_between_results_d1[[i]]$coefficients[5]-impute_tlc_target_between_results_d1[[i]]$coefficients[6]
+}
+mean_con_bewteen_d1 = unlist(mean_con_bewteen_d1)
+mean_con_bewteen_d1 = t(mean_con_bewteen_d1)
+mean_con_bewteen_d1
+
+se_con_between_d1 = unlist(se_con_between_d1)
+se_con_between_d1 = t(se_con_between_d1)
+se_con_between_d1
+
+se_con_between_d2 = list()
+mean_con_bewteen_d2 = list()
+for(i in 1:length(impute_tlc_target_between_results_d2)){
+  se_con_between_d2[[i]] = vcov(impute_tlc_target_between_results_d2[[i]])
+  se_con_between_d2[[i]] = sqrt((se_con_between_d2[[i]][5,5]+se_con_between_d2[[i]][6,6])-2*se_con_between_d2[[i]][6,5])
+  ## Now get difference
+  mean_con_bewteen_d2[[i]] = impute_tlc_target_between_results_d2[[i]]$coefficients[5]-impute_tlc_target_between_results_d2[[i]]$coefficients[6]
+}
+mean_con_bewteen_d2 = unlist(mean_con_bewteen_d2)
+mean_con_bewteen_d2 = t(mean_con_bewteen_d2)
+mean_con_bewteen_d2
+
+se_con_between_d2 = unlist(se_con_between_d2)
+se_con_between_d2 = t(se_con_between_d2)
+se_con_between_d2
+
+se_con_between_d2 = list()
+mean_con_bewteen_d2 = list()
+for(i in 1:length(impute_tlc_target_between_results_d2)){
+  se_con_between_d2[[i]] = vcov(impute_tlc_target_between_results_d2[[i]])
+  se_con_between_d2[[i]] = sqrt((se_con_between_d2[[i]][5,5]+se_con_between_d2[[i]][6,6])-2*se_con_between_d2[[i]][6,5])
+  ## Now get difference
+  mean_con_bewteen_d2[[i]] = impute_tlc_target_between_results_d2[[i]]$coefficients[5]-impute_tlc_target_between_results_d2[[i]]$coefficients[6]
+}
+mean_con_bewteen_d2 = unlist(mean_con_bewteen_d2)
+mean_con_bewteen_d2 = t(mean_con_bewteen_d2)
+mean_con_bewteen_d2
+
+se_con_between_d2 = unlist(se_con_between_d2)
+se_con_between_d2 = t(se_con_between_d2)
+se_con_between_d2
+
+se_con_between_d3 = list()
+mean_con_bewteen_d3 = list()
+for(i in 1:length(impute_tlc_target_between_results_d3)){
+  se_con_between_d3[[i]] = vcov(impute_tlc_target_between_results_d3[[i]])
+  se_con_between_d3[[i]] = sqrt((se_con_between_d3[[i]][5,5]+se_con_between_d3[[i]][6,6])-2*se_con_between_d3[[i]][6,5])
+  ## Now get difference
+  mean_con_bewteen_d3[[i]] = impute_tlc_target_between_results_d3[[i]]$coefficients[5]-impute_tlc_target_between_results_d3[[i]]$coefficients[6]
+}
+mean_con_bewteen_d3 = unlist(mean_con_bewteen_d3)
+mean_con_bewteen_d3 = t(mean_con_bewteen_d3)
+mean_con_bewteen_d3
+
+se_con_between_d3 = unlist(se_con_between_d3)
+se_con_between_d3 = t(se_con_between_d3)
+se_con_between_d3
+
+se_con_between_d4 = list()
+mean_con_bewteen_d4 = list()
+for(i in 1:length(impute_tlc_target_between_results_d4)){
+  se_con_between_d4[[i]] = vcov(impute_tlc_target_between_results_d4[[i]])
+  se_con_between_d4[[i]] = sqrt((se_con_between_d4[[i]][5,5]+se_con_between_d4[[i]][6,6])-2*se_con_between_d4[[i]][6,5])
+  ## Now get difference
+  mean_con_bewteen_d4[[i]] = impute_tlc_target_between_results_d4[[i]]$coefficients[5]-impute_tlc_target_between_results_d4[[i]]$coefficients[6]
+}
+mean_con_bewteen_d4 = unlist(mean_con_bewteen_d4)
+mean_con_bewteen_d4 = t(mean_con_bewteen_d4)
+mean_con_bewteen_d4
+
+se_con_between_d4 = unlist(se_con_between_d4)
+se_con_between_d4 = t(se_con_between_d4)
+se_con_between_d4
+
+se_con_between_d5 = list()
+mean_con_bewteen_d5 = list()
+for(i in 1:length(impute_tlc_target_between_results_d5)){
+  se_con_between_d5[[i]] = vcov(impute_tlc_target_between_results_d5[[i]])
+  se_con_between_d5[[i]] = sqrt((se_con_between_d5[[i]][5,5]+se_con_between_d5[[i]][6,6])-2*se_con_between_d5[[i]][6,5])
+  ## Now get difference
+  mean_con_bewteen_d5[[i]] = impute_tlc_target_between_results_d5[[i]]$coefficients[5]-impute_tlc_target_between_results_d5[[i]]$coefficients[6]
+}
+mean_con_bewteen_d5 = unlist(mean_con_bewteen_d5)
+mean_con_bewteen_d5 = t(mean_con_bewteen_d5)
+mean_con_bewteen_d5
+
+se_con_between_d5 = unlist(se_con_between_d5)
+se_con_between_d5 = t(se_con_between_d5)
+se_con_between_d5
+
+est_con = rbind(mean_con_bewteen_d1, mean_con_bewteen_d2, mean_con_bewteen_d3, mean_con_bewteen_d4, mean_con_bewteen_d5)
+
+se_con = rbind(se_con_between_d1, se_con_between_d2, se_con_between_d3, se_con_between_d4, se_con_between_d5)
+
+con_between = mi.meld(est_con, se_con)
+con_between
+
+critical_t = abs(qt(0.017/2, dim(out_diff_dat[[1]])[[1]]-5))
+est_con = data.frame(est_con  = con_between$q.mi)
+se_con = data.frame(se_con = con_between$se.mi)
+est_se_con = data.frame(est_con = t(est_con), se_con = t(se_con))
+t_stats = est_se_con$est_con / est_se_con$se_con
+est_se_con$p_values = round(2*pt(-abs(t_stats), df = dim(impute_dat_loop[[1]])[[1]]-5),3)
+est_se_con
+est_se_con = round(est_se_con,3)
+est_se_con
+#### 95% ci's
+upper = round(est_se_con$est_con +(critical_t*est_se_con$se_con),3)
+upper
+lower = round(est_se_con$est_con -(critical_t*est_se_con$se_con),3)
+lower
+ci_95 = paste0(lower, sep =",", upper)
+ci_95
+est_se_con$ci_95 = ci_95
+est_se_con
+est_se_con$est_con = ifelse(est_se_con$p_values < .017, paste0(est_se_con$est_con, "*"), est_se_con$est_con)
+est_se_con$est_con
+est_se_con
+
+
+```
+
+

@@ -344,9 +344,7 @@ describe.factor(treatment)
 ########## 
 # Put together Target dat set
 #################
-target_dat = data.frame(ID = datAdult$ID, treatment, age = datAdult$Age, female, non_white, single, sexual_minority, high_school_greater, employed, RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SIS_b_1_average,SSMI_b_average, RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SIS_d_1_average,SSMI_d_average)
-
-target_dat
+target_dat = data.frame(ID = datAdult$ID, treatment, age = datAdult$Age, female, non_white, single, sexual_minority, high_school_greater, employed, RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SIS_b_1_average,SSMI_b_average, RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SSMI_d_average, SIS_d_1_average)
 
 ```
 #############
@@ -367,6 +365,8 @@ tlc_dat_com[,4:10] = NULL
 head(tlc_dat_com)
 dim(tlc_dat_com)
 tlc_dat_com = data.frame(tlc_dat_com[,1:3], female, non_white, sexual_minority, tlc_dat_com[,4:23])
+tlc_dat_com
+
 ### Get SSMI after SIS and drop SIS 2 and PHQ-9
 tlc_dat_com$PHQ9_b = NULL
 tlc_dat_com$PHQ9_d = NULL
@@ -374,8 +374,6 @@ tlc_dat_com$SIS_b_2_average = NULL
 tlc_dat_com$SIS_d_2_average = NULL
 head(tlc_dat_com)
 dim(tlc_dat_com)
-tlc_dat_com[,21:22]
-tlc_dat_com = data.frame(tlc_dat_com[,1:12], SIS_b_1_average = tlc_dat_com[,14], SSMI_b_average = tlc_dat_com[,13], tlc_dat_com[15:20], SIS_d_1_average = tlc_dat_com[,22], SSMI_d_average= tlc_dat_com[,21])
 tlc_dat_com
 ############### Now target need to get rid of single, high school, and employed
 target_dat_com$single = NULL
@@ -433,8 +431,6 @@ So regression with stand diff score and target at indicator
 ##############################
 ```{r}
 ### Create difference scores
-
-
 out_diff_dat = list()
 impute_dat_loop[[1]][7:14]
 for(i in 1:length(impute_dat_loop)){
@@ -480,7 +476,7 @@ coefs_1_d1 = list()
 ses_1_d1 = list()
 for(i in 1:length(impute_tlc_target_within_results_t1_d1)){
   coefs_1_d1[[i]] = impute_tlc_target_within_results_t1_d1[[i]]$coefficients[2,1]
-  ses_1_d1[[i]] = impute_tlc_target_within_results_t1_d1[[i]]$coefficients[1,2]
+  ses_1_d1[[i]] = impute_tlc_target_within_results_t1_d1[[i]]$coefficients[2,2]
 }
 coefs_1_d1
 coefs_1_d1 = unlist(coefs_1_d1)
@@ -496,7 +492,7 @@ coefs_1_d2 = list()
 ses_1_d2 = list()
 for(i in 1:length(impute_tlc_target_within_results_t1_d2)){
   coefs_1_d2[[i]] = impute_tlc_target_within_results_t1_d2[[i]]$coefficients[2,1]
-  ses_1_d2[[i]] = impute_tlc_target_within_results_t1_d2[[i]]$coefficients[1,2]
+  ses_1_d2[[i]] = impute_tlc_target_within_results_t1_d2[[i]]$coefficients[2,2]
 }
 coefs_1_d2
 coefs_1_d2 = unlist(coefs_1_d2)
@@ -513,7 +509,7 @@ coefs_1_d3 = list()
 ses_1_d3 = list()
 for(i in 1:length(impute_tlc_target_within_results_t1_d3)){
   coefs_1_d3[[i]] = impute_tlc_target_within_results_t1_d3[[i]]$coefficients[2,1]
-  ses_1_d3[[i]] = impute_tlc_target_within_results_t1_d3[[i]]$coefficients[1,2]
+  ses_1_d3[[i]] = impute_tlc_target_within_results_t1_d3[[i]]$coefficients[2,2]
 }
 coefs_1_d3
 coefs_1_d3 = unlist(coefs_1_d3)
@@ -529,7 +525,7 @@ coefs_1_d4 = list()
 ses_1_d4 = list()
 for(i in 1:length(impute_tlc_target_within_results_t1_d4)){
   coefs_1_d4[[i]] = impute_tlc_target_within_results_t1_d4[[i]]$coefficients[2,1]
-  ses_1_d4[[i]] = impute_tlc_target_within_results_t1_d4[[i]]$coefficients[1,2]
+  ses_1_d4[[i]] = impute_tlc_target_within_results_t1_d4[[i]]$coefficients[2,2]
 }
 coefs_1_d4
 coefs_1_d4 = unlist(coefs_1_d4)
@@ -546,7 +542,7 @@ coefs_1_d5 = list()
 ses_1_d5 = list()
 for(i in 1:length(impute_tlc_target_within_results_t1_d5)){
   coefs_1_d5[[i]] = impute_tlc_target_within_results_t1_d5[[i]]$coefficients[2,1]
-  ses_1_d5[[i]] = impute_tlc_target_within_results_t1_d5[[i]]$coefficients[1,2]
+  ses_1_d5[[i]] = impute_tlc_target_within_results_t1_d5[[i]]$coefficients[2,2]
 }
 coefs_1_d5
 coefs_1_d5 = unlist(coefs_1_d5)
@@ -567,10 +563,10 @@ coefs_1_ses =  mi.meld(coefs_1_all,ses_1_all)
 t_stats_1 = coefs_1_ses$q.mi / coefs_1_ses$se.mi
 t_stats_1
 #p-value
-p_values_1 = round(2*pt(-abs(t_stats_1), df = dim(impute_dat_loop_t1[[1]])[1]-2),3)
+p_values_1 = round(2*pt(-abs(t_stats_1), df = dim(impute_dat_loop_t1[[1]])[1]-3),3)
 p_values_1
 #Critical t
-critical_ts_1= abs(qt(0.017/2, dim(impute_dat_loop_t1[[1]])[1]-2))
+critical_ts_1= abs(qt(0.017/2, dim(impute_dat_loop_t1[[1]])[1]-3))
 critical_ts_1
 
 #95 CI's
@@ -607,7 +603,7 @@ ses_2_d1 = list()
 
 for(i in 1:length(impute_tlc_target_within_results_t2_d1)){
   coefs_2_d1[[i]] = impute_tlc_target_within_results_t2_d1[[i]]$coefficients[2,1]
-  ses_2_d1[[i]] = impute_tlc_target_within_results_t2_d1[[i]]$coefficients[1,2]
+  ses_2_d1[[i]] = impute_tlc_target_within_results_t2_d1[[i]]$coefficients[2,2]
 }
 coefs_2_d1
 coefs_2_d1 = unlist(coefs_2_d1)
@@ -623,7 +619,7 @@ coefs_2_d2 = list()
 ses_2_d2 = list()
 for(i in 1:length(impute_tlc_target_within_results_t2_d2)){
   coefs_2_d2[[i]] = impute_tlc_target_within_results_t2_d2[[i]]$coefficients[2,1]
-  ses_2_d2[[i]] = impute_tlc_target_within_results_t2_d2[[i]]$coefficients[1,2]
+  ses_2_d2[[i]] = impute_tlc_target_within_results_t2_d2[[i]]$coefficients[2,2]
 }
 coefs_2_d2
 coefs_2_d2 = unlist(coefs_2_d2)
@@ -640,7 +636,7 @@ coefs_2_d3 = list()
 ses_2_d3 = list()
 for(i in 1:length(impute_tlc_target_within_results_t2_d3)){
   coefs_2_d3[[i]] = impute_tlc_target_within_results_t2_d3[[i]]$coefficients[2,1]
-  ses_2_d3[[i]] = impute_tlc_target_within_results_t2_d3[[i]]$coefficients[1,2]
+  ses_2_d3[[i]] = impute_tlc_target_within_results_t2_d3[[i]]$coefficients[2,2]
 }
 coefs_2_d3
 coefs_2_d3 = unlist(coefs_2_d3)
@@ -656,7 +652,7 @@ coefs_2_d4 = list()
 ses_2_d4 = list()
 for(i in 1:length(impute_tlc_target_within_results_t2_d4)){
   coefs_2_d4[[i]] = impute_tlc_target_within_results_t2_d4[[i]]$coefficients[2,1]
-  ses_2_d4[[i]] = impute_tlc_target_within_results_t2_d4[[i]]$coefficients[1,2]
+  ses_2_d4[[i]] = impute_tlc_target_within_results_t2_d4[[i]]$coefficients[2,2]
 }
 coefs_2_d4
 coefs_2_d4 = unlist(coefs_2_d4)
@@ -673,7 +669,7 @@ coefs_2_d5 = list()
 ses_2_d5 = list()
 for(i in 1:length(impute_tlc_target_within_results_t2_d5)){
   coefs_2_d5[[i]] = impute_tlc_target_within_results_t2_d5[[i]]$coefficients[2,1]
-  ses_2_d5[[i]] = impute_tlc_target_within_results_t2_d5[[i]]$coefficients[1,2]
+  ses_2_d5[[i]] = impute_tlc_target_within_results_t2_d5[[i]]$coefficients[2,2]
 }
 coefs_2_d5
 coefs_2_d5 = unlist(coefs_2_d5)
@@ -694,10 +690,10 @@ coefs_2_ses =  mi.meld(coefs_2_all,ses_2_all)
 t_stats_2 = coefs_2_ses$q.mi / coefs_2_ses$se.mi
 t_stats_2
 #p-value
-p_values_2 = round(2*pt(-abs(t_stats_2), df = dim(impute_dat_loop_t2[[1]])[1]-2),3)
+p_values_2 = round(2*pt(-abs(t_stats_2), df = dim(impute_dat_loop_t2[[1]])[1]-3),3)
 p_values_2
 #Critical t
-critical_ts_2= abs(qt(0.017/2, dim(impute_dat_loop_t2[[1]])[1]-2))
+critical_ts_2= abs(qt(0.017/2, dim(impute_dat_loop_t2[[1]])[1]-3))
 critical_ts_2
 
 #95 CI's
@@ -733,7 +729,7 @@ ses_3_d1 = list()
 
 for(i in 1:length(impute_tlc_target_within_results_t3_d1)){
   coefs_3_d1[[i]] = impute_tlc_target_within_results_t3_d1[[i]]$coefficients[2,1]
-  ses_3_d1[[i]] = impute_tlc_target_within_results_t3_d1[[i]]$coefficients[1,2]
+  ses_3_d1[[i]] = impute_tlc_target_within_results_t3_d1[[i]]$coefficients[2,2]
 }
 coefs_3_d1
 coefs_3_d1 = unlist(coefs_3_d1)
@@ -749,7 +745,7 @@ coefs_3_d2 = list()
 ses_3_d2 = list()
 for(i in 1:length(impute_tlc_target_within_results_t3_d2)){
   coefs_3_d2[[i]] = impute_tlc_target_within_results_t3_d2[[i]]$coefficients[2,1]
-  ses_3_d2[[i]] = impute_tlc_target_within_results_t3_d2[[i]]$coefficients[1,2]
+  ses_3_d2[[i]] = impute_tlc_target_within_results_t3_d2[[i]]$coefficients[2,2]
 }
 coefs_3_d2
 coefs_3_d2 = unlist(coefs_3_d2)
@@ -766,7 +762,7 @@ coefs_3_d3 = list()
 ses_3_d3 = list()
 for(i in 1:length(impute_tlc_target_within_results_t3_d3)){
   coefs_3_d3[[i]] = impute_tlc_target_within_results_t3_d3[[i]]$coefficients[2,1]
-  ses_3_d3[[i]] = impute_tlc_target_within_results_t3_d3[[i]]$coefficients[1,2]
+  ses_3_d3[[i]] = impute_tlc_target_within_results_t3_d3[[i]]$coefficients[2,2]
 }
 coefs_3_d3
 coefs_3_d3 = unlist(coefs_3_d3)
@@ -782,7 +778,7 @@ coefs_3_d4 = list()
 ses_3_d4 = list()
 for(i in 1:length(impute_tlc_target_within_results_t3_d4)){
   coefs_3_d4[[i]] = impute_tlc_target_within_results_t3_d4[[i]]$coefficients[2,1]
-  ses_3_d4[[i]] = impute_tlc_target_within_results_t3_d4[[i]]$coefficients[1,2]
+  ses_3_d4[[i]] = impute_tlc_target_within_results_t3_d4[[i]]$coefficients[2,2]
 }
 coefs_3_d4
 coefs_3_d4 = unlist(coefs_3_d4)
@@ -799,7 +795,7 @@ coefs_3_d5 = list()
 ses_3_d5 = list()
 for(i in 1:length(impute_tlc_target_within_results_t3_d5)){
   coefs_3_d5[[i]] = impute_tlc_target_within_results_t3_d5[[i]]$coefficients[2,1]
-  ses_3_d5[[i]] = impute_tlc_target_within_results_t3_d5[[i]]$coefficients[1,2]
+  ses_3_d5[[i]] = impute_tlc_target_within_results_t3_d5[[i]]$coefficients[2,2]
 }
 coefs_3_d5
 coefs_3_d5 = unlist(coefs_3_d5)
@@ -820,10 +816,10 @@ coefs_3_ses =  mi.meld(coefs_3_all,ses_3_all)
 t_stats_3 = coefs_3_ses$q.mi / coefs_3_ses$se.mi
 t_stats_3
 #p-value
-p_values_3 = round(2*pt(-abs(t_stats_3), df = dim(impute_dat_loop_t3[[1]])[1]-2),3)
+p_values_3 = round(2*pt(-abs(t_stats_3), df = dim(impute_dat_loop_t3[[1]])[1]-3),3)
 p_values_3
 #Critical t
-critical_ts_3= abs(qt(0.017/2, dim(impute_dat_loop_t3[[1]])[1]-2))
+critical_ts_3= abs(qt(0.017/2, dim(impute_dat_loop_t3[[1]])[1]-3))
 critical_ts_3
 
 #95 CI's
@@ -995,7 +991,6 @@ tlc_target_between_impute_results
 tlc_target_between_impute_results$par_estimate = ifelse(tlc_target_between_impute_results$p_value < .017, paste0(tlc_target_between_impute_results$par_estimate, "*"), tlc_target_between_impute_results$par_estimate)
 tlc_target_between_impute_results
 
-
 ```
 ########## 
 Get contrasts
@@ -1016,6 +1011,14 @@ mean_con_bewteen_d1
 se_con_between_d1 = unlist(se_con_between_d1)
 se_con_between_d1 = t(se_con_between_d1)
 se_con_between_d1
+
+#### Test that se is right
+test_tlc_target_con_dat = out_diff_dat[[1]]
+test_tlc_target_con_model = lm(RAS_1_diff ~ factor(treatment)*target, data = test_tlc_target_con_dat)
+test_tlc_target_con_model
+K = matrix(c(0, 0,0,0,1,-1), ncol = 6, nrow = 1, byrow = TRUE)
+t= glht(test_tlc_target_con_model, linfct = K)
+summary(t)
 
 se_con_between_d2 = list()
 mean_con_bewteen_d2 = list()
@@ -1125,7 +1128,6 @@ est_se_con
 est_se_con$est_con = ifelse(est_se_con$p_values < .017, paste0(est_se_con$est_con, "*"), est_se_con$est_con)
 est_se_con$est_con
 est_se_con
-
 
 ```
 

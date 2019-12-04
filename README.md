@@ -146,14 +146,6 @@ head(tlc_data_analysis_average)
 
 tlc_data_analysis_average
 
-########## Invalid parts
-## Excluding .1's those without a TXPackageAssigned package assigned
-is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol
-whole_number =  is.wholenumber(tlc_data_analysis_average$YouthID)
-tlc_data_analysis_average$whole_number = whole_number
-tlc_data_analysis_average = subset(tlc_data_analysis_average, whole_number == TRUE)
-dim(tlc_data_analysis_average)
-tlc_data_analysis_average$whole_number = NULL
 ```
 ######################
 Data cleaning Target

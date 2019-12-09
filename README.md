@@ -145,6 +145,7 @@ tlc_data_analysis_average = data.frame(tlc_data_analysis[,c(1,2,4:8, 99:104)], R
 head(tlc_data_analysis_average)
 
 tlc_data_analysis_average
+tlc_data_analysis_average[,8:13] = NULL
 
 ```
 ######################

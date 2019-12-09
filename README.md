@@ -182,20 +182,19 @@ dim(datPreAdult)
 ### merge with treatment
 datAdult = merge(datAdult, datAdultTreat, all.x = TRUE, by = "Adult.ID")
 dim(datAdult)
+describe.factor(datAdult$Treatment)
 
-#### Get the missing ids for Rachel
-target_id_treat$na_true = is.na(target_id_treat$treat)
-target_id_treat = subset(target_id_treat, na_true == TRUE)
-dim(target_id_treat)
-
-
-
-
-##########
 #### Three double ids need to get rid of 1272, 1280, 1131 
 datAdult = datAdult[-c(259, 262,208),] 
 describe.factor(datAdult$Adult.ID)
+head(datAdult[c(259, 262,208),])
 
+#### Get rid of .1's without treatments they are repeats
+dim(datAdult)
+datAdult$treatment_missing = is.na(datAdult$Treatment)
+datAdult = subset(datAdult, treatment_missing == FALSE)
+dim(datAdult)
+##########
 
 
 colnames(datAdult) = c("ID", "Age", "Gender", "Race", "SexualOrientation", "RelationshipStatus", "Edu", "Employment", "RAS1_b", "RAS2_b", "RAS3_b", "RAS4_b", "RAS5_b", "RAS6_b", "RAS7_b", "RAS8_b", "RAS9_b", "RAS10_b", "RAS11_b", "RAS12_b", "RAS13_b", "RAS14_b", "RAS15_b", "RAS16_b", "RAS17_b", "RAS18_b", "RAS19_b", "RAS20_b", "INQ1_b", "INQ2_b", "INQ3_b", "INQ4_b", "INQ5_b", "INQ6_b", "INQ7_b", "INQ8_b", "INQ9_b", "INQ10_b", "SSMI1_b", "SSMI2_b", "SSMI3_b", "SSMI4_b", "SSMI5_b", "SIS1_b", "SIS2_b", "SIS3_b", "SIS4_b", "SIS5_b", "SIS6_b", "SIS7_b", "RAS1_d", "RAS2_d", "RAS3_d", "RAS4_d", "RAS5_d", "RAS6_d", "RAS7_d", "RAS8_d", "RAS9_d", "RAS10_d", "RAS11_d", "RAS12_d", "RAS13_d", "RAS14_d", "RAS15_d", "RAS16_d", "RAS17_d", "RAS18_d", "RAS19_d", "RAS20_d", "INQ1_d", "INQ2_d", "INQ3_d", "INQ4_d", "INQ5_d", "INQ6_d", "INQ7_d", "INQ8_d", "INQ9_d", "INQ10_d", "SSMI1_d", "SSMI2_d", "SSMI3_d", "SSMI4_d", "SSMI5_d", "SIS1_d", "SIS2_d", "SIS3_d", "SIS4_d", "SIS5_d", "SIS6_d", "SIS7_d", "Treatment")
@@ -206,7 +205,7 @@ datAdult$Treatment = ifelse(datAdult$Treatment == "A", 1, ifelse(datAdult$Treatm
 describe.factor(datAdult$Treatment)
 
 ### Werid B changed to 6 so changing it back
-datAdult$Treatment = ifelse(datAdult$Treatment == 6 , 2, datAdult$Treatment)
+datAdult$Treatment = ifelse(datAdult$Treatment == 5 , 2, datAdult$Treatment)
 describe.factor(datAdult$Treatment)
 # Three items are reversed scored: f = 6, g = 7, j = 10
 datAdult$INQ6_b = 8-datAdult$INQ6_b
@@ -289,6 +288,9 @@ SIS_d_1_average  = apply(SIS_d_1_average , 1, mean, na.rm = TRUE)
 SSMI_d_average =datAdult[,81:85]
 SSMI_d_average = apply(SSMI_d_average, 1, mean, na.rm = TRUE)
 #################
+
+
+#################
 # Clean up demographics
 datAdult
 ## Gender female = 1 versus male = 0
@@ -322,40 +324,10 @@ describe.factor(treatment)
 #################
 target_dat = data.frame(ID = datAdult$ID, treatment, age = datAdult$Age, female, non_white, single, sexual_minority, high_school_greater, employed, RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SIS_b_1_average,SSMI_b_average, RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SIS_d_1_average,SSMI_d_average)
 
-target_dat
-#################
-# Clean up demographics
-datAdult
-## Gender female = 1 versus male = 0
-describe.factor(datAdult$Gender)
-female = ifelse(datAdult$Gender == 1, 0,1)
-## Race non-white = 1 versus white = 0
-describe.factor(datAdult$Race)
-non_white = ifelse(datAdult$Race == 7,0,1)
-### Single =1 versus non-single 0
-describe.factor(datAdult$RelationshipStatus)
-single = ifelse(datAdult$RelationshipStatus == 1, 1, 0)
-### Sexual orientation
-### sexual_minority != 3, hetero = 3
-describe.factor(datAdult$SexualOrientation)
-sexual_minority = ifelse(datAdult$SexualOrientation != 3, 1, 0)
-
-### edu high school or greater 2 or above
-describe.factor(datAdult$Edu)
-high_school_greater = ifelse(datAdult$Edu > 1, 1, 0)
-
-#### employement 2,3 employed and all else not employed
-describe.factor(datAdult$Employment)
-employed = ifelse(datAdult$Employment == 2, 1, ifelse(datAdult$Employment == 3, 1, 0))
-
 
 ### treatment
 treatment =  datAdult$Treatment
 describe.factor(treatment)
-########## 
-# Put together Target dat set
-#################
-target_dat = data.frame(ID = datAdult$ID, treatment, age = datAdult$Age, female, non_white, single, sexual_minority, high_school_greater, employed, RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SIS_b_1_average,SSMI_b_average, RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SSMI_d_average, SIS_d_1_average)
 
 ```
 #############

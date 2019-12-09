@@ -9,7 +9,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 ##################
-Data cleaning TLC
+Data cleaning
 ###############
 
 ```{r}
@@ -144,954 +144,817 @@ tlc_data_analysis_average = data.frame(tlc_data_analysis[,c(1,2,4:8, 99:104)], R
 
 head(tlc_data_analysis_average)
 
-tlc_data_analysis_average
+dim(tlc_data_analysis_average)
+```
+Evaluate missing data
+Get percentage of missing data for each variable
+Test missing assumption
+Get rid of missing data
+```{r}
+library(MissMech)
+library(naniar)
+##### Get rid of EHR vars 
 tlc_data_analysis_average[,8:13] = NULL
+### Assessing global missing data 
 
-```
-######################
-Data cleaning Target
-######################
-```{r, include=FALSE}
-setwd("P:/Evaluation/TN Lives Count_Writing/4_Target1_EnhancedCrisisFollow-up/3_Data & Data Analyses")
-datPreAdult = read.csv("Target1EnhancedBaseAdult.csv", header = TRUE)
-datPostAdult = read.csv("Target1EnhancedPostAdult.csv", header = TRUE)
-datAdultTreat = read.csv("AdultTreatments.csv", header = TRUE)
-
-library(prettyR)
-
-
-head(datPreAdult)
-# subset the variables that you want
-datPreAdult =datPreAdult[c(1, 3:4, 6,8,10, 12:13, 15:34, 36:45, 47:51, 53:59)]
-dim(datPreAdult)
-head(datPostAdult)
-datPostAdult = datPostAdult[c(1, 3:22,24:33, 35:39, 41:47)]
-head(datPostAdult)
-dim(datPostAdult)
-# Rename added variables otherwise everything else should be the same
-colnames(datPreAdult)[colnames(datPreAdult) == "Added.V2..Thinking.of.Ways.to.Kill.Self"] = "Added"   
-
-### Need to deal with ID problems in here first
-describe.factor(datPreAdult$Adult.ID)
-
-
-dim(datPreAdult)
-### Now merge all data with baseline to assess missingness
-datAdult = merge(datPreAdult, datPostAdult, all.x = TRUE, by = "Adult.ID")
-dim(datAdult)
-dim(datPreAdult)
-### merge with treatment
-datAdult = merge(datAdult, datAdultTreat, all.x = TRUE, by = "Adult.ID")
-dim(datAdult)
-describe.factor(datAdult$Treatment)
-
-#### Three double ids need to get rid of 1272, 1280, 1131 
-datAdult = datAdult[-c(259, 262,208),] 
-describe.factor(datAdult$Adult.ID)
-head(datAdult[c(259, 262,208),])
-
-#### Get rid of .1's without treatments they are repeats
-dim(datAdult)
-datAdult$treatment_missing = is.na(datAdult$Treatment)
-datAdult = subset(datAdult, treatment_missing == FALSE)
-dim(datAdult)
-##########
-
-
-colnames(datAdult) = c("ID", "Age", "Gender", "Race", "SexualOrientation", "RelationshipStatus", "Edu", "Employment", "RAS1_b", "RAS2_b", "RAS3_b", "RAS4_b", "RAS5_b", "RAS6_b", "RAS7_b", "RAS8_b", "RAS9_b", "RAS10_b", "RAS11_b", "RAS12_b", "RAS13_b", "RAS14_b", "RAS15_b", "RAS16_b", "RAS17_b", "RAS18_b", "RAS19_b", "RAS20_b", "INQ1_b", "INQ2_b", "INQ3_b", "INQ4_b", "INQ5_b", "INQ6_b", "INQ7_b", "INQ8_b", "INQ9_b", "INQ10_b", "SSMI1_b", "SSMI2_b", "SSMI3_b", "SSMI4_b", "SSMI5_b", "SIS1_b", "SIS2_b", "SIS3_b", "SIS4_b", "SIS5_b", "SIS6_b", "SIS7_b", "RAS1_d", "RAS2_d", "RAS3_d", "RAS4_d", "RAS5_d", "RAS6_d", "RAS7_d", "RAS8_d", "RAS9_d", "RAS10_d", "RAS11_d", "RAS12_d", "RAS13_d", "RAS14_d", "RAS15_d", "RAS16_d", "RAS17_d", "RAS18_d", "RAS19_d", "RAS20_d", "INQ1_d", "INQ2_d", "INQ3_d", "INQ4_d", "INQ5_d", "INQ6_d", "INQ7_d", "INQ8_d", "INQ9_d", "INQ10_d", "SSMI1_d", "SSMI2_d", "SSMI3_d", "SSMI4_d", "SSMI5_d", "SIS1_d", "SIS2_d", "SIS3_d", "SIS4_d", "SIS5_d", "SIS6_d", "SIS7_d", "Treatment")
-describe.factor(datAdult$Treatment)
-
-# Two treatments have B with space first so try and recode those as just B's
-datAdult$Treatment = ifelse(datAdult$Treatment == "A", 1, ifelse(datAdult$Treatment =="B", 2, ifelse(datAdult$Treatment == " B", 2, ifelse(datAdult$Treatment == "C", 3, datAdult$Treatment)))) 
-describe.factor(datAdult$Treatment)
-
-### Werid B changed to 6 so changing it back
-datAdult$Treatment = ifelse(datAdult$Treatment == 5 , 2, datAdult$Treatment)
-describe.factor(datAdult$Treatment)
-# Three items are reversed scored: f = 6, g = 7, j = 10
-datAdult$INQ6_b = 8-datAdult$INQ6_b
-datAdult$INQ7_b = 8-datAdult$INQ7_b
-datAdult$INQ10_b = 8-datAdult$INQ10_b
-
-datAdult$INQ6_d = 8-datAdult$INQ6_d
-datAdult$INQ7_d = 8-datAdult$INQ7_d
-datAdult$INQ10_d = 8-datAdult$INQ10_d
-
-#### Check for goofy answers looks good
-apply(datAdult, 2, function(x){describe.factor(x)})
-
-### Now get the means
-head(datAdult)
-# Subscale one: f =6, g = 7, h = 8, I = 9,  j = 10, k = 11, l = 12, m = 13, t = 20
-RAS_b_1_average = datAdult[,c(14:21, 28)]
-RAS_b_1_average = apply(RAS_b_1_average,1,mean, na.rm = TRUE)
-
-# Subscale two q = 17, r= 18, s= 19
-RAS_b_2_average = datAdult[,c(25:27)]
-RAS_b_2_average = apply(RAS_b_2_average, 1, mean, na.rm = TRUE)
-
-# Subscale three: a = 1, b = 2, c = 3, d= 4, e = 5
-RAS_b_3_average = datAdult[,9:13]
-RAS_b_3_average = apply(RAS_b_3_average, 1, mean, na.rm = TRUE)
-
-# Subscale five: n = 14, o = 15, p = 16
-RAS_b_5_average = datAdult[,22:24]
-RAS_b_5_average = apply(RAS_b_5_average, 1, mean, na.rm = TRUE)
-
-#Subscale 1 for INQ: a = 1, b = 2, c = 3, d = 4, e = 5
-INQ_b_1_average = datAdult[,29:33]
-INQ_b_1_average = apply(INQ_b_1_average, 1, mean, na.rm = TRUE)
-
-#Subscale 2 for INQ: f-j: 6-10
-INQ_b_2_average = datAdult[,35:38]
-INQ_b_2_average = apply(INQ_b_2_average, 1, mean, na.rm = TRUE)
-
-#Subscale 1 for SIS: a-d: 1:4
-SIS_b_1_average  = datAdult[,44:47]
-SIS_b_1_average  = apply(SIS_b_1_average , 1, mean, na.rm = TRUE)
-
-
-### SSMI
-SSMI_b_average = datAdult[,39:43]
-SSMI_b_average = apply(SSMI_b_average, 1, mean, na.rm = TRUE)
-########
-# Now discharge
-#########
-# Subscale one: f =6, g = 7, h = 8, I = 9,  j = 10, k = 11, l = 12, m = 13, t = 20
-RAS_d_1_average = datAdult[,c(57:63, 70)]
-RAS_d_1_average = apply(RAS_d_1_average,1,mean, na.rm = TRUE)
-
-# Subscale two q = 17, r= 18, s= 19
-RAS_d_2_average = datAdult[,c(67:69)]
-RAS_d_2_average = apply(RAS_d_2_average, 1, mean, na.rm = TRUE)
-
-# Subscale three: a = 1, b = 2, c = 3, d= 4, e = 5
-RAS_d_3_average = datAdult[,51:55]
-RAS_d_3_average = apply(RAS_d_3_average, 1, mean, na.rm = TRUE)
-
-# Subscale five: n = 14, o = 15, p = 16
-RAS_d_5_average = datAdult[,64:66]
-RAS_d_5_average = apply(RAS_d_5_average, 1, mean, na.rm = TRUE)
-
-#Subscale 1 for INQ: a = 1, b = 2, c = 3, d = 4, e = 5
-INQ_d_1_average = datAdult[,71:75]
-INQ_d_1_average = apply(INQ_d_1_average, 1, mean, na.rm = TRUE)
-
-#Subscale 2 for INQ: f-j: 6-10
-INQ_d_2_average = datAdult[,76:80]
-INQ_d_2_average = apply(INQ_d_2_average, 1, mean, na.rm = TRUE)
-
-#Subscale 1 for SIS: a-d: 1:4
-SIS_d_1_average  = datAdult[,86:89]
-SIS_d_1_average  = apply(SIS_d_1_average , 1, mean, na.rm = TRUE)
-
-### SSMI
-SSMI_d_average =datAdult[,81:85]
-SSMI_d_average = apply(SSMI_d_average, 1, mean, na.rm = TRUE)
-#################
-
-
-#################
-# Clean up demographics
-datAdult
-## Gender female = 1 versus male = 0
-describe.factor(datAdult$Gender)
-female = ifelse(datAdult$Gender == 1, 0,1)
-## Race non-white = 1 versus white = 0
-describe.factor(datAdult$Race)
-non_white = ifelse(datAdult$Race == 7,0,1)
-### Single =1 versus non-single 0
-describe.factor(datAdult$RelationshipStatus)
-single = ifelse(datAdult$RelationshipStatus == 1, 1, 0)
-### Sexual orientation
-### sexual_minority != 3, hetero = 3
-describe.factor(datAdult$SexualOrientation)
-sexual_minority = ifelse(datAdult$SexualOrientation != 3, 1, 0)
-
-### edu high school or greater 2 or above
-describe.factor(datAdult$Edu)
-high_school_greater = ifelse(datAdult$Edu > 1, 1, 0)
-
-#### employement 2,3 employed and all else not employed
-describe.factor(datAdult$Employment)
-employed = ifelse(datAdult$Employment == 2, 1, ifelse(datAdult$Employment == 3, 1, 0))
-
-
-### treatment
-treatment =  datAdult$Treatment
-describe.factor(treatment)
-########## 
-# Put together Target dat set
-#################
-target_dat = data.frame(ID = datAdult$ID, treatment, age = datAdult$Age, female, non_white, single, sexual_minority, high_school_greater, employed, RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SIS_b_1_average,SSMI_b_average, RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SIS_d_1_average,SSMI_d_average)
-
-
-### treatment
-treatment =  datAdult$Treatment
-describe.factor(treatment)
-
-```
-#############
-Combine then, then get rid of missing data using 50% rule
-```{r}
-dim(target_dat)
-target_dat_com = target_dat
-tlc_dat_com = tlc_data_analysis_average
-colnames(tlc_dat_com)[c(1,2,3)] = c("ID", "treatment", "age")
-head(tlc_dat_com)
-female = ifelse(tlc_dat_com$Gender == 2, 1, 0)
-tlc_dat_com$Gender = NULL
-non_white = ifelse(tlc_dat_com$RaceEthnicity == 3,0,1)
-tlc_dat_com$RaceEthnicity = NULL
-sexual_minority = ifelse(tlc_dat_com$SexualOrientation == 5,0,1)
-tlc_dat_com$SexualOrientation = NULL
-tlc_dat_com[,4:10] = NULL
-head(tlc_dat_com)
-dim(tlc_dat_com)
-tlc_dat_com = data.frame(tlc_dat_com[,1:3], female, non_white, sexual_minority, tlc_dat_com[,4:23])
-tlc_dat_com
-
-### Get SSMI after SIS and drop SIS 2 and PHQ-9
-tlc_dat_com$PHQ9_b = NULL
-tlc_dat_com$PHQ9_d = NULL
-tlc_dat_com$SIS_b_2_average = NULL
-tlc_dat_com$SIS_d_2_average = NULL
-head(tlc_dat_com)
-dim(tlc_dat_com)
-tlc_dat_com
-############### Now target need to get rid of single, high school, and employed
-target_dat_com$single = NULL
-target_dat_com$high_school_greater = NULL
-target_dat_com$employed = NULL
-
-dim(target_dat_com)
-target_dat_com$target = rep(1,dim(target_dat_com)[1])
-dim(tlc_dat_com)
-tlc_dat_com$target = rep(0,dim(tlc_dat_com)[1])
-
-tlc_target_dat = rbind(target_dat_com, tlc_dat_com)
-tlc_target_dat
-
-```
-################################
-Now get quasi imputed data set
-################################
-```{r}
-############ Review missing data
-miss_var_summary(tlc_target_dat)
-
-
-quasi_itt =  apply(tlc_target_dat, 1, function(x)(sum(is.na(x))))
-quasi_itt_dat = data.frame(tlc_target_dat,quasi_itt)
-describe.factor(quasi_itt_dat$quasi_itt)
-### Ten variables and threshold is less than 50% 
-dim(quasi_itt_dat)[2]/2
+dim(tlc_data_analysis_average)
+var_missing =  miss_var_summary(tlc_data_analysis_average)
+var_missing = data.frame(var_missing)
+write.csv(var_missing, "var_missing.csv", row.names = FALSE)
+#write.csv(var_missing, "var_missing.csv", row.names = FALSE)
+full_n = dim(tlc_data_analysis_average)[1]
+############## Getting rid of anyone who doesn't have at 50% complete data
+quasi_itt =  apply(tlc_data_analysis_average, 1, function(x)(sum(is.na(x))))
+quasi_itt_dat = data.frame(tlc_data_analysis_average,quasi_itt)
+### Threshold is less than 50% 
 quasi_itt_dat = subset(quasi_itt_dat, quasi_itt < dim(quasi_itt_dat)[2]/2)
-dim(tlc_target_dat)
-dim(quasi_itt_dat)
 quasi_itt_dat$quasi_itt = NULL
-tlc_target_dat
+dim(quasi_itt_dat)
+quasi_itt_n = dim(quasi_itt_dat)[1]
+### Percentage of drop for quasi itt
+quasi_itt_drop_out_rate = 1-(dim(quasi_itt_dat)[1]/dim(tlc_data_analysis_average)[1])
+quasi_itt_drop_out_rate
+quasi_itt_missing_percent = prop_miss_case(quasi_itt_dat)
+####### 
+quasi_tot_dat =  quasi_itt_dat 
+quasi_tot_dat = na.omit(quasi_tot_dat)
+quasi_tot_n = dim(quasi_tot_dat)[1]
+quasi_tot_drop_out_rate = 1-(dim(quasi_tot_dat)[1]/dim(tlc_data_analysis_average)[1])
 
+
+
+### Put together all results
+missing_results = data.frame(full_n, quasi_itt_n, quasi_tot_n, quasi_itt_drop_out_rate, quasi_tot_drop_out_rate)
+missing_results = round(missing_results, 3)
+missing_results = t(missing_results)
+colnames(missing_results)= "n_percent"
+#### Add a column with explainations for each of them
+explain = c("Total number of participants. Anyone assigned a treatment id.  Could have .1 or larger if that is the only piece of data. Excluded if not assigned a TXPackageAssigned.", "Total number of participants who have at least 50% of data. This data set still contains missing values.", "Total number of complete cases.", "Percentage of clients who did not complete at least 70% of discharge.", "Percentage of missing data.")
+missing_results = data.frame(missing_results, explain)
+
+write.csv(missing_results, "missing_results.csv")
+
+describe.factor(quasi_itt_dat$TXPackageAssigned)
+write.csv(tlc_data_analysis_average,"tlc_data_analysis_average.csv", row.names = FALSE)
+```
+Descriptive statistics
+
+Who provided (program staff) what services (modality, type, intensity, duration), to whom (individual characteristics), in what context (system, community)?
+
+ (1) a minimum of 5,660  youth will receive all components of the enhanced post-crisis follow-up intervention by the discharge survey 
+ 
+ (3) a minimum of  5,660  youth enrolled in the enhanced post-crisis follow-up intervention will complete a safety plan and successfully implement all aspects of the plan at least 80% of the time;
+```{r}
+head(tlc_data_analysis_average)
+tlc_data_analysis_average = quasi_itt_dat
+### N 
+dim(tlc_data_analysis_average)
+### 1 put into an excel form
+dim(tlc_data_analysis_average)
+library(psych)
+con_vars  = tlc_data_analysis_average[,c(3,8,14:33)]
+con_vars_mean = apply(con_vars,2, mean, na.rm = TRUE)
+con_vars_sd = apply(con_vars, 2, sd, na.rm = TRUE)
+con_vars_range = apply(con_vars, 2, range, na.rm = TRUE)
+con_vars_range = t(con_vars_range)
+con_vars_range = data.frame(con_vars_range)
+con_vars_range = round(con_vars_range, 3)
+con_vars_range$range = paste0(con_vars_range$X1, sep = ",", con_vars_range$X2)
+con_vars_range = con_vars_range$range
+con_vars_range
+con_vars_results = data.frame(con_vars_mean, con_vars_sd, con_vars_range)
+con_vars_results[,1:2] = round(con_vars_results[,1:2],3)
+con_vars_results
+colnames(con_vars_results) = c("mean_count", "sd_percent", "range")
+con_vars_results
+write.csv(con_vars_results, "con_vars_results.csv")
+##### Get cat vars
+head(tlc_data_analysis_average)
+cat_vars = tlc_data_analysis_average[,c(2,4:7,9:13)] 
+cat_vars = apply(cat_vars, 2, function(x){describe.factor(x)})
+cat_vars = data.frame(cat_vars)
+cat_vars = t(cat_vars)
+cat_vars = data.frame(cat_vars)
+cat_vars$Percent = round(cat_vars$Percent, 3)
+cat_vars
+write.csv(cat_vars, "cat_vars.csv")
+### Now percentage of missing for the count vars
+var_missing =  miss_var_summary(tlc_data_analysis_average)
+var_missing$pct_miss = round(var_missing$pct_miss, 3)
+write.csv(var_missing, "var_missing.csv")
+```
+(4) self-stigma of mental illness, thwarted belongingness, and perceived burdensomeness will each decrease 30% among youth enrolled in enhanced post-crisis follow-up by the discharge assessment; and 
+(5) scores on the suicidal ideation scale will decrease by 40% among youth enrolled in the enhanced post-crisis follow-up intervention
+(6) Scores on the recovery assessment scale will increase by 35% among youth enrolled in the enhanced post-crisis follow-up intervention
+```{r}
+head(tlc_data_analysis_average)
+### Pre 
+pre_scores_tlc=  tlc_data_analysis_average[,14:23]
+post_scores_tlc = tlc_data_analysis_average[,24:33]
+post_scores_tlc = apply(post_scores_tlc, 2, mean, na.rm = TRUE)
+pre_scores_tlc = apply(pre_scores_tlc, 2, mean, na.rm =TRUE)
+
+p_change = (post_scores_tlc-pre_scores_tlc)/pre_scores_tlc
+
+p_change_results = data.frame(pre_scores_tlc, post_scores_tlc, p_change)
+p_change_results = round(p_change_results, 3)
+p_change_results
+```
+(1)	a minimum of 5,660  youth will receive all components of the enhanced post-crisis follow-up intervention by the discharge survey 
+
+referrals will be retained at least 50% of the time among youth enrolled in the post-crisis follow-up intervention and follow-through with appointments will occur at least 75% of the time
+```{r}
+tlc_data_analysis_average$ReferralsEngaged_binary = ifelse(tlc_data_analysis_average$ReferralsEngaged > 0,1,0)
+describe.factor(tlc_data_analysis_average$ReferralsEngaged_binary)
+describe.factor(tlc_data_analysis_average$Attend75Referrals)
 ```
 
 
-#######################
-Now get imputted data
-#######################
+Check assumptions of normality
+```{r}
+outcomes_tests = tlc_data_analysis_average[,14:22]
+hist_results = list() 
+qq_results = list()
+shap_results = list()
+for(i in 1:length(outcomes_tests)){
+  hist_results[[i]] = hist(outcomes_tests[[i]])
+  qq_results[[i]] = qqnorm(outcomes_tests[[i]])
+  shap_results[[i]] = shapiro.test(outcomes_tests[[i]])
+}
+shap_results
+```
+
+###########################
+SIS outcomes associated with it
+##########################
+```{r}
+outcomes_freq
+corr.test(outcomes_freq)
+
+
+####### Suicide idea 
+suicide_idea_model_0 = lm(SIS_1_diff ~ RAS_1_diff + RAS_2_diff + RAS_3_diff + INQ_1_diff + INQ_2_diff + SSMI_diff + PHQ9_diff + SIS_2_diff, data = outcomes_freq_stand)
+vif(suicide_idea_model_0)
+suicide_idea_model_sum_0 = summary(suicide_idea_model_0)
+suicide_idea_model_sum_0
+round(suicide_idea_model_sum_0$coefficients,3)
+
+suicide_idea_model_1 = lm(SIS_1_diff ~ RAS_1_diff  + RAS_3_diff + INQ_1_diff + INQ_2_diff  + PHQ9_diff + SIS_2_diff, data = outcomes_freq_stand)
+suicide_idea_model_1_sum = summary(suicide_idea_model_1)
+suicide_idea_model_1_sum = round(suicide_idea_model_1_sum$coefficients,3)
+write.csv(suicide_idea_model_1_sum, "suicide_idea_model_1_sum.csv")
+
+checK_assump = gvlma(suicide_idea_model)
+checK_assump
+par(mar=c(1,1,1,1))
+plot.gvlma(checK_assump)
+library(car)
+checkresiduals(suicide_idea_model)
+
+### Second factor
+resolved_model_0 = lm(SIS_2_diff ~ RAS_1_diff + RAS_2_diff + RAS_3_diff + INQ_1_diff + INQ_2_diff + SSMI_diff + PHQ9_diff + SIS_1_diff , data = outcomes_freq_stand)
+vif(resolved_model_0)
+resolved_model_sum_0 = summary(resolved_model_0)
+resolved_model_sum_0
+resolved_model_sum_0 = round(resolved_model_sum_0$coefficients,3)
+write.csv(resolved_model_sum_0, "resolved_model_sum_0.csv")
+
+
+resolved_model_1 = lm(SIS_2_diff ~ RAS_1_diff + RAS_2_diff + RAS_3_diff + INQ_1_diff + INQ_2_diff + SSMI_diff + PHQ9_diff , data = outcomes_freq_stand)
+summary(resolved_model_1)
+
+checK_assump = gvlma(resolved_model_0)
+checK_assump
+par(mar=c(1,1,1,1))
+plot.gvlma(checK_assump)
+library(car)
+checkresiduals(resolved_model)
+
+
+```
+###########################
+Imputted results
+###########################
+Imputation
 ```{r}
 library(Amelia)
-head(quasi_itt_dat)
-sum(is.na(quasi_itt_dat))
-prop_miss_case(quasi_itt_dat)
-a.out = amelia(x=quasi_itt_dat, m = 5, noms = c("treatment", "female", "non_white", "sexual_minority"))
+impute_dat = quasi_itt_dat
+dim(impute_dat)
+describe.factor(impute_dat$TXPackageAssigned)
+### Try coding as binary for everything besies TXPackageAssigned package
+##
+impute_dat$female = ifelse(impute_dat$Gender == 2, 1, 0)
+impute_dat$Gender = NULL
+impute_dat$non_white = ifelse(impute_dat$RaceEthnicity == 3,0,1)
+impute_dat$RaceEthnicity = NULL
+impute_dat$sexual_minority = ifelse(impute_dat$SexualOrientation == 5,0,1)
+impute_dat$SexualOrientation = NULL
+
+## EHR variables causing problems.
+impute_dat[,5:10] = NULL
+
+
+a.out = amelia(x = impute_dat, m = 5, noms = c("TXPackageAssigned" ,"female", "HispanicLatino", "non_white", "sexual_minority"))
+compare.density(a.out, var = "SIS_d_2_average")
 summary(a.out)
+disperse(a.out)
 impute_dat_loop = a.out$imputations
-
-
 ```
-##############
-Within between TLC and Target
-So regression with stand diff score and target at indicator
-##############################
+
+
+######################
+Within tlc results
+######################
+Phone only
+Get means and sds then meld together so you don't have to deal with it, then you can calcaulate cohen's d by hand for all of them.
 ```{r}
+#### Treatment 1
+tlc_within_d1_base_t1 = subset(impute_dat_loop[[1]][,c(2,5:14)], TXPackageAssigned == 1)
+tlc_within_d1_dis_t1 = subset(impute_dat_loop[[1]][,c(2,15:24)], TXPackageAssigned == 1)
+tlc_within_d1_base_t1$TXPackageAssigned = NULL
+tlc_within_d1_dis_t1$TXPackageAssigned = NULL
+
+library(effsize)
+tlc_within_results_d1_t1 = list()
+for(i in 1:length(tlc_within_d1_base_t1)){
+  tlc_within_results_d1_t1[[i]] = cohen.d(tlc_within_d1_dis_t1[[i]], tlc_within_d1_base_t1[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d1_t1[[i]] = tlc_within_results_d1_t1[[i]][c(3,5)]
+}
+
+tlc_within_results_d1_t1
+tlc_within_results_d1_t1 = unlist(tlc_within_results_d1_t1)
+tlc_within_results_d1_t1 = matrix(tlc_within_results_d1_t1, ncol = 3, byrow = TRUE)
+tlc_within_results_d1_t1 = data.frame(tlc_within_results_d1_t1)
+tlc_within_results_d1_t1 = round(tlc_within_results_d1_t1, 3)
+tlc_within_results_d1_t1
+colnames(tlc_within_results_d1_t1) = c("cohen_d", "lower", "upper")
+tlc_within_results_d1_t1
+
+tlc_within_d2_base_t1 = subset(impute_dat_loop[[2]][,c(2,5:14)], TXPackageAssigned == 1)
+tlc_within_d2_dis_t1 = subset(impute_dat_loop[[2]][,c(2,15:24)], TXPackageAssigned == 1)
+tlc_within_d2_base_t1$TXPackageAssigned = NULL
+tlc_within_d2_dis_t1$TXPackageAssigned = NULL
+
+tlc_within_results_d2_t1 = list()
+for(i in 1:length(tlc_within_d2_base_t1)){
+  tlc_within_results_d2_t1[[i]] = cohen.d(tlc_within_d2_dis_t1[[i]], tlc_within_d2_base_t1[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d2_t1[[i]] = tlc_within_results_d2_t1[[i]][c(3,5)]
+}
+
+tlc_within_results_d2_t1
+tlc_within_results_d2_t1 = unlist(tlc_within_results_d2_t1)
+tlc_within_results_d2_t1 = matrix(tlc_within_results_d2_t1, ncol = 3, byrow = TRUE)
+tlc_within_results_d2_t1 = data.frame(tlc_within_results_d2_t1)
+tlc_within_results_d2_t1 = round(tlc_within_results_d2_t1, 3)
+tlc_within_results_d2_t1
+colnames(tlc_within_results_d2_t1) = c("cohen_d", "lower", "upper")
+tlc_within_results_d2_t1
+
+tlc_within_d3_base_t1 = subset(impute_dat_loop[[3]][,c(2,5:14)], TXPackageAssigned == 1)
+tlc_within_d3_dis_t1 = subset(impute_dat_loop[[3]][,c(2,15:24)], TXPackageAssigned == 1)
+tlc_within_d3_base_t1$TXPackageAssigned = NULL
+tlc_within_d3_dis_t1$TXPackageAssigned = NULL
+
+tlc_within_results_d3_t1 = list()
+for(i in 1:length(tlc_within_d3_base_t1)){
+  tlc_within_results_d3_t1[[i]] = cohen.d(tlc_within_d3_dis_t1[[i]], tlc_within_d3_base_t1[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d3_t1[[i]] = tlc_within_results_d3_t1[[i]][c(3,5)]
+}
+
+tlc_within_results_d3_t1
+tlc_within_results_d3_t1 = unlist(tlc_within_results_d3_t1)
+tlc_within_results_d3_t1 = matrix(tlc_within_results_d3_t1, ncol = 3, byrow = TRUE)
+tlc_within_results_d3_t1 = data.frame(tlc_within_results_d3_t1)
+tlc_within_results_d3_t1 = round(tlc_within_results_d3_t1, 3)
+tlc_within_results_d3_t1
+colnames(tlc_within_results_d3_t1) = c("cohen_d", "lower", "upper")
+tlc_within_results_d3_t1
+
+tlc_within_d4_base_t1 = subset(impute_dat_loop[[4]][,c(2,5:14)], TXPackageAssigned == 1)
+tlc_within_d4_dis_t1 = subset(impute_dat_loop[[4]][,c(2,15:24)], TXPackageAssigned == 1)
+tlc_within_d4_base_t1$TXPackageAssigned = NULL
+tlc_within_d4_dis_t1$TXPackageAssigned = NULL
+
+tlc_within_results_d4_t1 = list()
+for(i in 1:length(tlc_within_d4_base_t1)){
+  tlc_within_results_d4_t1[[i]] = cohen.d(tlc_within_d4_dis_t1[[i]], tlc_within_d4_base_t1[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d4_t1[[i]] = tlc_within_results_d4_t1[[i]][c(3,5)]
+}
+
+tlc_within_results_d4_t1
+tlc_within_results_d4_t1 = unlist(tlc_within_results_d4_t1)
+tlc_within_results_d4_t1 = matrix(tlc_within_results_d4_t1, ncol = 3, byrow = TRUE)
+tlc_within_results_d4_t1 = data.frame(tlc_within_results_d4_t1)
+tlc_within_results_d4_t1 = round(tlc_within_results_d4_t1, 3)
+tlc_within_results_d4_t1
+colnames(tlc_within_results_d4_t1) = c("cohen_d", "lower", "upper")
+tlc_within_results_d4_t1
+
+
+tlc_within_d5_base_t1 = subset(impute_dat_loop[[5]][,c(2,5:14)], TXPackageAssigned == 1)
+tlc_within_d5_dis_t1 = subset(impute_dat_loop[[5]][,c(2,15:24)], TXPackageAssigned == 1)
+tlc_within_d5_base_t1$TXPackageAssigned = NULL
+tlc_within_d5_dis_t1$TXPackageAssigned = NULL
+
+tlc_within_results_d5_t1 = list()
+for(i in 1:length(tlc_within_d5_base_t1)){
+  tlc_within_results_d5_t1[[i]] = cohen.d(tlc_within_d5_dis_t1[[i]], tlc_within_d5_base_t1[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d5_t1[[i]] = tlc_within_results_d5_t1[[i]][c(3,5)]
+}
+
+tlc_within_results_d5_t1
+tlc_within_results_d5_t1 = unlist(tlc_within_results_d5_t1)
+tlc_within_results_d5_t1 = matrix(tlc_within_results_d5_t1, ncol = 3, byrow = TRUE)
+tlc_within_results_d5_t1 = data.frame(tlc_within_results_d5_t1)
+tlc_within_results_d5_t1 = round(tlc_within_results_d5_t1, 3)
+tlc_within_results_d5_t1
+colnames(tlc_within_results_d5_t1) = c("cohen_d", "lower", "upper")
+tlc_within_results_d5_t1
+
+######### Now combine just average
+tlc_within_t1_cohen_d = data.frame(cohen_d1 = tlc_within_results_d1_t1$cohen_d, cohen_d2 = tlc_within_results_d2_t1$cohen_d, cohen_d3 = tlc_within_results_d3_t1$cohen_d, cohen_d4 = tlc_within_results_d4_t1$cohen_d, cohen_d5 = tlc_within_results_d5_t1$cohen_d)
+tlc_within_t1_cohen_d = rowMeans(tlc_within_t1_cohen_d)
+tlc_within_t1_cohen_d
+
+tlc_within_t1_upper = data.frame(upper1 = tlc_within_results_d1_t1$upper, upper2 = tlc_within_results_d2_t1$upper, upper3 = tlc_within_results_d3_t1$upper, upper4 = tlc_within_results_d4_t1$upper, upper5 = tlc_within_results_d5_t1$upper)
+tlc_within_t1_upper = rowMeans(tlc_within_t1_upper)
+tlc_within_t1_upper
+
+tlc_within_t1_lower = data.frame(lower1 = tlc_within_results_d1_t1$lower, lower2 = tlc_within_results_d2_t1$lower, lower3 = tlc_within_results_d3_t1$lower, lower4 = tlc_within_results_d4_t1$lower, lower5 = tlc_within_results_d5_t1$lower)
+tlc_within_t1_lower = rowMeans(tlc_within_t1_lower)
+tlc_within_t1_lower
+
+tlc_within_t1_results = data.frame(cohen_d = tlc_within_t1_cohen_d, upper = tlc_within_t1_upper, lower = tlc_within_t1_lower)
+tlc_within_t1_results = round(tlc_within_t1_results, 3)
+tlc_within_t1_results
+
+tlc_within_t1_results$cohen_d = ifelse(tlc_within_t1_results$upper > 0 & tlc_within_t1_results$lower < 0, tlc_within_t1_results$cohen_d, paste0(tlc_within_t1_results$cohen_d, "*"))
+tlc_within_t1_results$ci_95 = paste0(tlc_within_t1_results$lower, sep = ",", tlc_within_t1_results$upper)
+tlc_within_t1_results[,2:3] = NULL
+tlc_within_t1_results
+
+#### Treatment 2
+tlc_within_d1_base_t2 = subset(impute_dat_loop[[1]][,c(2,5:14)], TXPackageAssigned == 2)
+tlc_within_d1_dis_t2 = subset(impute_dat_loop[[1]][,c(2,15:24)], TXPackageAssigned == 2)
+tlc_within_d1_base_t2$TXPackageAssigned = NULL
+tlc_within_d1_dis_t2$TXPackageAssigned = NULL
+
+tlc_within_results_d1_t2 = list()
+for(i in 1:length(tlc_within_d1_base_t2)){
+  tlc_within_results_d1_t2[[i]] = cohen.d(tlc_within_d1_dis_t2[[i]], tlc_within_d1_base_t2[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d1_t2[[i]] = tlc_within_results_d1_t2[[i]][c(3,5)]
+}
+
+tlc_within_results_d1_t2
+tlc_within_results_d1_t2 = unlist(tlc_within_results_d1_t2)
+tlc_within_results_d1_t2 = matrix(tlc_within_results_d1_t2, ncol = 3, byrow = TRUE)
+tlc_within_results_d1_t2 = data.frame(tlc_within_results_d1_t2)
+tlc_within_results_d1_t2 = round(tlc_within_results_d1_t2, 3)
+tlc_within_results_d1_t2
+colnames(tlc_within_results_d1_t2) = c("cohen_d", "lower", "upper")
+tlc_within_results_d1_t2
+
+tlc_within_d2_base_t2 = subset(impute_dat_loop[[2]][,c(2,5:14)], TXPackageAssigned == 2)
+tlc_within_d2_dis_t2 = subset(impute_dat_loop[[2]][,c(2,15:24)], TXPackageAssigned == 2)
+tlc_within_d2_base_t2$TXPackageAssigned = NULL
+tlc_within_d2_dis_t2$TXPackageAssigned = NULL
+
+tlc_within_results_d2_t2 = list()
+for(i in 1:length(tlc_within_d2_base_t2)){
+  tlc_within_results_d2_t2[[i]] = cohen.d(tlc_within_d2_dis_t2[[i]], tlc_within_d2_base_t2[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d2_t2[[i]] = tlc_within_results_d2_t2[[i]][c(3,5)]
+}
+
+tlc_within_results_d2_t2
+tlc_within_results_d2_t2 = unlist(tlc_within_results_d2_t2)
+tlc_within_results_d2_t2 = matrix(tlc_within_results_d2_t2, ncol = 3, byrow = TRUE)
+tlc_within_results_d2_t2 = data.frame(tlc_within_results_d2_t2)
+tlc_within_results_d2_t2 = round(tlc_within_results_d2_t2, 3)
+tlc_within_results_d2_t2
+colnames(tlc_within_results_d2_t2) = c("cohen_d", "lower", "upper")
+tlc_within_results_d2_t2
+
+tlc_within_d3_base_t2 = subset(impute_dat_loop[[3]][,c(2,5:14)], TXPackageAssigned == 2)
+tlc_within_d3_dis_t2 = subset(impute_dat_loop[[3]][,c(2,15:24)], TXPackageAssigned == 2)
+tlc_within_d3_base_t2$TXPackageAssigned = NULL
+tlc_within_d3_dis_t2$TXPackageAssigned = NULL
+
+tlc_within_results_d3_t2 = list()
+for(i in 1:length(tlc_within_d3_base_t2)){
+  tlc_within_results_d3_t2[[i]] = cohen.d(tlc_within_d3_dis_t2[[i]], tlc_within_d3_base_t2[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d3_t2[[i]] = tlc_within_results_d3_t2[[i]][c(3,5)]
+}
+
+tlc_within_results_d3_t2
+tlc_within_results_d3_t2 = unlist(tlc_within_results_d3_t2)
+tlc_within_results_d3_t2 = matrix(tlc_within_results_d3_t2, ncol = 3, byrow = TRUE)
+tlc_within_results_d3_t2 = data.frame(tlc_within_results_d3_t2)
+tlc_within_results_d3_t2 = round(tlc_within_results_d3_t2, 3)
+tlc_within_results_d3_t2
+colnames(tlc_within_results_d3_t2) = c("cohen_d", "lower", "upper")
+tlc_within_results_d3_t2
+
+tlc_within_d4_base_t2 = subset(impute_dat_loop[[4]][,c(2,5:14)], TXPackageAssigned == 2)
+tlc_within_d4_dis_t2 = subset(impute_dat_loop[[4]][,c(2,15:24)], TXPackageAssigned == 2)
+tlc_within_d4_base_t2$TXPackageAssigned = NULL
+tlc_within_d4_dis_t2$TXPackageAssigned = NULL
+
+tlc_within_results_d4_t2 = list()
+for(i in 1:length(tlc_within_d4_base_t2)){
+  tlc_within_results_d4_t2[[i]] = cohen.d(tlc_within_d4_dis_t2[[i]], tlc_within_d4_base_t2[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d4_t2[[i]] = tlc_within_results_d4_t2[[i]][c(3,5)]
+}
+
+tlc_within_results_d4_t2
+tlc_within_results_d4_t2 = unlist(tlc_within_results_d4_t2)
+tlc_within_results_d4_t2 = matrix(tlc_within_results_d4_t2, ncol = 3, byrow = TRUE)
+tlc_within_results_d4_t2 = data.frame(tlc_within_results_d4_t2)
+tlc_within_results_d4_t2 = round(tlc_within_results_d4_t2, 3)
+tlc_within_results_d4_t2
+colnames(tlc_within_results_d4_t2) = c("cohen_d", "lower", "upper")
+tlc_within_results_d4_t2
+
+
+tlc_within_d5_base_t2 = subset(impute_dat_loop[[5]][,c(2,5:14)], TXPackageAssigned == 2)
+tlc_within_d5_dis_t2 = subset(impute_dat_loop[[5]][,c(2,15:24)], TXPackageAssigned == 2)
+tlc_within_d5_base_t2$TXPackageAssigned = NULL
+tlc_within_d5_dis_t2$TXPackageAssigned = NULL
+
+tlc_within_results_d5_t2 = list()
+for(i in 1:length(tlc_within_d5_base_t2)){
+  tlc_within_results_d5_t2[[i]] = cohen.d(tlc_within_d5_dis_t2[[i]], tlc_within_d5_base_t2[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d5_t2[[i]] = tlc_within_results_d5_t2[[i]][c(3,5)]
+}
+
+tlc_within_results_d5_t2
+tlc_within_results_d5_t2 = unlist(tlc_within_results_d5_t2)
+tlc_within_results_d5_t2 = matrix(tlc_within_results_d5_t2, ncol = 3, byrow = TRUE)
+tlc_within_results_d5_t2 = data.frame(tlc_within_results_d5_t2)
+tlc_within_results_d5_t2 = round(tlc_within_results_d5_t2, 3)
+tlc_within_results_d5_t2
+colnames(tlc_within_results_d5_t2) = c("cohen_d", "lower", "upper")
+tlc_within_results_d5_t2
+
+######### Now combine just average
+tlc_within_t2_cohen_d = data.frame(cohen_d1 = tlc_within_results_d1_t2$cohen_d, cohen_d2 = tlc_within_results_d2_t2$cohen_d, cohen_d3 = tlc_within_results_d3_t2$cohen_d, cohen_d4 = tlc_within_results_d4_t2$cohen_d, cohen_d5 = tlc_within_results_d5_t2$cohen_d)
+tlc_within_t2_cohen_d = rowMeans(tlc_within_t2_cohen_d)
+tlc_within_t2_cohen_d
+
+tlc_within_t2_upper = data.frame(upper1 = tlc_within_results_d1_t2$upper, upper2 = tlc_within_results_d2_t2$upper, upper3 = tlc_within_results_d3_t2$upper, upper4 = tlc_within_results_d4_t2$upper, upper5 = tlc_within_results_d5_t2$upper)
+tlc_within_t2_upper = rowMeans(tlc_within_t2_upper)
+tlc_within_t2_upper
+
+tlc_within_t2_lower = data.frame(lower1 = tlc_within_results_d1_t2$lower, lower2 = tlc_within_results_d2_t2$lower, lower3 = tlc_within_results_d3_t2$lower, lower4 = tlc_within_results_d4_t2$lower, lower5 = tlc_within_results_d5_t2$lower)
+tlc_within_t2_lower = rowMeans(tlc_within_t2_lower)
+tlc_within_t2_lower
+
+tlc_within_t2_results = data.frame(cohen_d = tlc_within_t2_cohen_d, upper = tlc_within_t2_upper, lower = tlc_within_t2_lower)
+tlc_within_t2_results = round(tlc_within_t2_results, 3)
+tlc_within_t2_results$cohen_d = ifelse(tlc_within_t2_results$upper > 0 & tlc_within_t2_results$lower < 0, tlc_within_t2_results$cohen_d, paste0(tlc_within_t2_results$cohen_d, "*"))
+tlc_within_t2_results$ci_95 = paste0(tlc_within_t2_results$lower, sep = ",", tlc_within_t2_results$upper)
+tlc_within_t2_results[,2:3] = NULL
+tlc_within_t2_results
+
+#### Treatment 3
+tlc_within_d1_base_t3 = subset(impute_dat_loop[[1]][,c(2,5:14)], TXPackageAssigned == 3)
+tlc_within_d1_dis_t3 = subset(impute_dat_loop[[1]][,c(2,15:24)], TXPackageAssigned == 3)
+tlc_within_d1_base_t3$TXPackageAssigned = NULL
+tlc_within_d1_dis_t3$TXPackageAssigned = NULL
+
+tlc_within_results_d1_t3 = list()
+for(i in 1:length(tlc_within_d1_base_t3)){
+  tlc_within_results_d1_t3[[i]] = cohen.d(tlc_within_d1_dis_t3[[i]], tlc_within_d1_base_t3[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d1_t3[[i]] = tlc_within_results_d1_t3[[i]][c(3,5)]
+}
+
+tlc_within_results_d1_t3
+tlc_within_results_d1_t3 = unlist(tlc_within_results_d1_t3)
+tlc_within_results_d1_t3 = matrix(tlc_within_results_d1_t3, ncol = 3, byrow = TRUE)
+tlc_within_results_d1_t3 = data.frame(tlc_within_results_d1_t3)
+tlc_within_results_d1_t3 = round(tlc_within_results_d1_t3, 3)
+tlc_within_results_d1_t3
+colnames(tlc_within_results_d1_t3) = c("cohen_d", "lower", "upper")
+tlc_within_results_d1_t3
+
+tlc_within_d2_base_t3 = subset(impute_dat_loop[[2]][,c(2,5:14)], TXPackageAssigned == 3)
+tlc_within_d2_dis_t3 = subset(impute_dat_loop[[2]][,c(2,15:24)], TXPackageAssigned == 3)
+tlc_within_d2_base_t3$TXPackageAssigned = NULL
+tlc_within_d2_dis_t3$TXPackageAssigned = NULL
+
+tlc_within_results_d2_t3 = list()
+for(i in 1:length(tlc_within_d2_base_t3)){
+  tlc_within_results_d2_t3[[i]] = cohen.d(tlc_within_d2_dis_t3[[i]], tlc_within_d2_base_t3[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d2_t3[[i]] = tlc_within_results_d2_t3[[i]][c(3,5)]
+}
+
+tlc_within_results_d2_t3
+tlc_within_results_d2_t3 = unlist(tlc_within_results_d2_t3)
+tlc_within_results_d2_t3 = matrix(tlc_within_results_d2_t3, ncol = 3, byrow = TRUE)
+tlc_within_results_d2_t3 = data.frame(tlc_within_results_d2_t3)
+tlc_within_results_d2_t3 = round(tlc_within_results_d2_t3, 3)
+tlc_within_results_d2_t3
+colnames(tlc_within_results_d2_t3) = c("cohen_d", "lower", "upper")
+tlc_within_results_d2_t3
+
+tlc_within_d3_base_t3 = subset(impute_dat_loop[[3]][,c(2,5:14)], TXPackageAssigned == 3)
+tlc_within_d3_dis_t3 = subset(impute_dat_loop[[3]][,c(2,15:24)], TXPackageAssigned == 3)
+tlc_within_d3_base_t3$TXPackageAssigned = NULL
+tlc_within_d3_dis_t3$TXPackageAssigned = NULL
+
+tlc_within_results_d3_t3 = list()
+for(i in 1:length(tlc_within_d3_base_t3)){
+  tlc_within_results_d3_t3[[i]] = cohen.d(tlc_within_d3_dis_t3[[i]], tlc_within_d3_base_t3[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d3_t3[[i]] = tlc_within_results_d3_t3[[i]][c(3,5)]
+}
+
+tlc_within_results_d3_t3
+tlc_within_results_d3_t3 = unlist(tlc_within_results_d3_t3)
+tlc_within_results_d3_t3 = matrix(tlc_within_results_d3_t3, ncol = 3, byrow = TRUE)
+tlc_within_results_d3_t3 = data.frame(tlc_within_results_d3_t3)
+tlc_within_results_d3_t3 = round(tlc_within_results_d3_t3, 3)
+tlc_within_results_d3_t3
+colnames(tlc_within_results_d3_t3) = c("cohen_d", "lower", "upper")
+tlc_within_results_d3_t3
+
+tlc_within_d4_base_t3 = subset(impute_dat_loop[[4]][,c(2,5:14)], TXPackageAssigned == 3)
+tlc_within_d4_dis_t3 = subset(impute_dat_loop[[4]][,c(2,15:24)], TXPackageAssigned == 3)
+tlc_within_d4_base_t3$TXPackageAssigned = NULL
+tlc_within_d4_dis_t3$TXPackageAssigned = NULL
+
+tlc_within_results_d4_t3 = list()
+for(i in 1:length(tlc_within_d4_base_t3)){
+  tlc_within_results_d4_t3[[i]] = cohen.d(tlc_within_d4_dis_t3[[i]], tlc_within_d4_base_t3[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d4_t3[[i]] = tlc_within_results_d4_t3[[i]][c(3,5)]
+}
+
+tlc_within_results_d4_t3
+tlc_within_results_d4_t3 = unlist(tlc_within_results_d4_t3)
+tlc_within_results_d4_t3 = matrix(tlc_within_results_d4_t3, ncol = 3, byrow = TRUE)
+tlc_within_results_d4_t3 = data.frame(tlc_within_results_d4_t3)
+tlc_within_results_d4_t3 = round(tlc_within_results_d4_t3, 3)
+tlc_within_results_d4_t3
+colnames(tlc_within_results_d4_t3) = c("cohen_d", "lower", "upper")
+tlc_within_results_d4_t3
+
+
+tlc_within_d5_base_t3 = subset(impute_dat_loop[[5]][,c(2,5:14)], TXPackageAssigned == 3)
+tlc_within_d5_dis_t3 = subset(impute_dat_loop[[5]][,c(2,15:24)], TXPackageAssigned == 3)
+tlc_within_d5_base_t3$TXPackageAssigned = NULL
+tlc_within_d5_dis_t3$TXPackageAssigned = NULL
+
+tlc_within_results_d5_t3 = list()
+for(i in 1:length(tlc_within_d5_base_t3)){
+  tlc_within_results_d5_t3[[i]] = cohen.d(tlc_within_d5_dis_t3[[i]], tlc_within_d5_base_t3[[i]], paired = TRUE, conf.level = .95)
+  tlc_within_results_d5_t3[[i]] = tlc_within_results_d5_t3[[i]][c(3,5)]
+}
+
+tlc_within_results_d5_t3
+tlc_within_results_d5_t3 = unlist(tlc_within_results_d5_t3)
+tlc_within_results_d5_t3 = matrix(tlc_within_results_d5_t3, ncol = 3, byrow = TRUE)
+tlc_within_results_d5_t3 = data.frame(tlc_within_results_d5_t3)
+tlc_within_results_d5_t3 = round(tlc_within_results_d5_t3, 3)
+tlc_within_results_d5_t3
+colnames(tlc_within_results_d5_t3) = c("cohen_d", "lower", "upper")
+tlc_within_results_d5_t3
+
+######### Now combine just average
+tlc_within_t3_cohen_d = data.frame(cohen_d1 = tlc_within_results_d1_t3$cohen_d, cohen_d2 = tlc_within_results_d2_t3$cohen_d, cohen_d3 = tlc_within_results_d3_t3$cohen_d, cohen_d4 = tlc_within_results_d4_t3$cohen_d, cohen_d5 = tlc_within_results_d5_t3$cohen_d)
+tlc_within_t3_cohen_d = rowMeans(tlc_within_t3_cohen_d)
+tlc_within_t3_cohen_d
+
+tlc_within_t3_upper = data.frame(upper1 = tlc_within_results_d1_t3$upper, upper2 = tlc_within_results_d2_t3$upper, upper3 = tlc_within_results_d3_t3$upper, upper4 = tlc_within_results_d4_t3$upper, upper5 = tlc_within_results_d5_t3$upper)
+tlc_within_t3_upper = rowMeans(tlc_within_t3_upper)
+tlc_within_t3_upper
+
+tlc_within_t3_lower = data.frame(lower1 = tlc_within_results_d1_t3$lower, lower2 = tlc_within_results_d2_t3$lower, lower3 = tlc_within_results_d3_t3$lower, lower4 = tlc_within_results_d4_t3$lower, lower5 = tlc_within_results_d5_t3$lower)
+tlc_within_t3_lower = rowMeans(tlc_within_t3_lower)
+tlc_within_t3_lower
+
+tlc_within_t3_results = data.frame(cohen_d = tlc_within_t3_cohen_d, upper = tlc_within_t3_upper, lower = tlc_within_t3_lower)
+tlc_within_t3_results = round(tlc_within_t3_results, 3)
+tlc_within_t3_results$cohen_d = ifelse(tlc_within_t3_results$upper > 0 & tlc_within_t3_results$lower < 0, tlc_within_t3_results$cohen_d, paste0(tlc_within_t3_results$cohen_d, "*"))
+tlc_within_t3_results$ci_95 = paste0(tlc_within_t3_results$lower, sep = ",", tlc_within_t3_results$upper)
+tlc_within_t3_results[,2:3] = NULL
+
+tlc_within_results = rbind(tlc_within_t1_results, tlc_within_t2_results, tlc_within_t3_results)
+
+write.csv(tlc_within_results, "tlc_within_results.csv", row.names = FALSE)
+```
+######################
+Between tlc
+######################
+```{r}
+
 ### Create difference scores
 out_diff_dat = list()
-impute_dat_loop[[1]][7:14]
+impute_dat_loop[[1]][5:14]
 for(i in 1:length(impute_dat_loop)){
-  out_diff_dat[[i]] = impute_dat_loop[[i]][15:22]-impute_dat_loop[[i]][7:14]
-  colnames(out_diff_dat[[i]]) = c("RAS_1_diff", "RAS_2_diff", "RAS_3_diff", "RAS_5_diff", "INQ_1_diff", "INQ_2_diff", "SIS_1_diff", "SSMI_diff")
+  out_diff_dat[[i]] = impute_dat_loop[[i]][15:24]-impute_dat_loop[[i]][5:14]
+  colnames(out_diff_dat[[i]]) = c("RAS_1_diff", "RAS_2_diff", "RAS_3_diff", "RAS_5_diff", "INQ_1_diff", "INQ_2_diff", "SSMI_diff", "SIS_1_diff", "SIS_2_diff", "PHQ9_diff")
   out_diff_dat[[i]] = scale(out_diff_dat[[i]])
   out_diff_dat[[i]] =cbind(impute_dat_loop[[i]], out_diff_dat[[i]])
 }
-out_diff_dat[[1]]
-
-
-```
-####################
-Within between target
-#####################
-```{r}
-
-impute_dat_loop_t1= list()
-impute_dat_loop_t2= list()
-impute_dat_loop_t3= list()
-
+out_diff_dat
+impute_tlc_between_results = list()
+impute_tlc_between_results_sum = list()
+se_con = list()
 for(i in 1:length(out_diff_dat)){
-  impute_dat_loop_t1[[i]] = subset(out_diff_dat[[i]], treatment == 1)
-  impute_dat_loop_t2[[i]] = subset(out_diff_dat[[i]], treatment == 2)
-  impute_dat_loop_t3[[i]] = subset(out_diff_dat[[i]], treatment == 3)
-}
-dim(impute_dat_loop_t1[[1]])
-
-impute_tlc_target_within_results_t1 = list()
-for(i in 1:length(impute_dat_loop_t1)){
-  impute_tlc_target_within_results_t1[[i]]=lm(cbind(RAS_1_diff, RAS_2_diff,RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SIS_1_diff, SSMI_diff) ~ target, data = impute_dat_loop_t1[[i]])
+  impute_tlc_between_results[[i]]=lm(cbind(RAS_1_diff, RAS_2_diff,RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SSMI_diff, SIS_1_diff, SIS_2_diff, PHQ9_diff) ~ factor(TXPackageAssigned), data = out_diff_dat[[i]])
 }
 
-impute_tlc_target_within_results_t1_d1 = summary(impute_tlc_target_within_results_t1[[1]])
-impute_tlc_target_within_results_t1_d2 = summary(impute_tlc_target_within_results_t1[[2]])
-impute_tlc_target_within_results_t1_d3 = summary(impute_tlc_target_within_results_t1[[3]])
-impute_tlc_target_within_results_t1_d4 = summary(impute_tlc_target_within_results_t1[[4]])
-impute_tlc_target_within_results_t1_d5 = summary(impute_tlc_target_within_results_t1[[5]])
+impute_tlc_between_results_1 = summary(impute_tlc_between_results[[1]])
+impute_tlc_between_results_2 = summary(impute_tlc_between_results[[2]])
+impute_tlc_between_results_3 = summary(impute_tlc_between_results[[3]])
+impute_tlc_between_results_4 = summary(impute_tlc_between_results[[4]])
+impute_tlc_between_results_5 = summary(impute_tlc_between_results[[5]])
 
-impute_tlc_target_within_results_t1_d1
 
-coefs_1_d1 = list()
-ses_1_d1 = list()
-for(i in 1:length(impute_tlc_target_within_results_t1_d1)){
-  coefs_1_d1[[i]] = impute_tlc_target_within_results_t1_d1[[i]]$coefficients[2,1]
-  ses_1_d1[[i]] = impute_tlc_target_within_results_t1_d1[[i]]$coefficients[2,2]
+coefs_1 = list()
+ses_1 = list()
+for(i in 1:length(impute_tlc_between_results_1)){
+  coefs_1[[i]] = impute_tlc_between_results_1[[i]]$coefficients[2:3,1]
+  ses_1[[i]] = impute_tlc_between_results_1[[i]]$coefficients[2:3,2]
 }
-coefs_1_d1
-coefs_1_d1 = unlist(coefs_1_d1)
-coefs_1_d1 = matrix(coefs_1_d1, ncol = 8)
-coefs_1_d1
+coefs_1
+coefs_1 = unlist(coefs_1)
+coefs_1 = matrix(coefs_1, ncol = 20)
+coefs_1
 
-ses_1_d1
-ses_1_d1 = unlist(ses_1_d1)
-ses_1_d1 = matrix(ses_1_d1, ncol = 8)
-ses_1_d1
+ses_1
+ses_1 = unlist(ses_1)
+ses_1 = matrix(ses_1, ncol = 20)
+ses_1
 
-coefs_1_d2 = list()
-ses_1_d2 = list()
-for(i in 1:length(impute_tlc_target_within_results_t1_d2)){
-  coefs_1_d2[[i]] = impute_tlc_target_within_results_t1_d2[[i]]$coefficients[2,1]
-  ses_1_d2[[i]] = impute_tlc_target_within_results_t1_d2[[i]]$coefficients[2,2]
+
+coefs_2 = list()
+ses_2 = list()
+for(i in 1:length(impute_tlc_between_results_2)){
+  coefs_2[[i]] = impute_tlc_between_results_2[[i]]$coefficients[2:3,1]
+  ses_2[[i]] = impute_tlc_between_results_2[[i]]$coefficients[2:3,2]
 }
-coefs_1_d2
-coefs_1_d2 = unlist(coefs_1_d2)
-coefs_1_d2 = matrix(coefs_1_d2, ncol = 8)
-coefs_1_d2
+coefs_2
+coefs_2 = unlist(coefs_2)
+coefs_2 = matrix(coefs_2, ncol = 20)
+coefs_2
 
-ses_1_d2
-ses_1_d2 = unlist(ses_1_d2)
-ses_1_d2 = matrix(ses_1_d2, ncol = 8)
-ses_1_d2
+ses_2
+ses_2 = unlist(ses_2)
+ses_2 = matrix(ses_2, ncol = 20)
+ses_2
 
-
-coefs_1_d3 = list()
-ses_1_d3 = list()
-for(i in 1:length(impute_tlc_target_within_results_t1_d3)){
-  coefs_1_d3[[i]] = impute_tlc_target_within_results_t1_d3[[i]]$coefficients[2,1]
-  ses_1_d3[[i]] = impute_tlc_target_within_results_t1_d3[[i]]$coefficients[2,2]
+coefs_3 = list()
+ses_3 = list()
+for(i in 1:length(impute_tlc_between_results_3)){
+  coefs_3[[i]] = impute_tlc_between_results_3[[i]]$coefficients[2:3,1]
+  ses_3[[i]] = impute_tlc_between_results_3[[i]]$coefficients[2:3,2]
 }
-coefs_1_d3
-coefs_1_d3 = unlist(coefs_1_d3)
-coefs_1_d3 = matrix(coefs_1_d3, ncol = 8)
-coefs_1_d3
+coefs_3
+coefs_3 = unlist(coefs_3)
+coefs_3 = matrix(coefs_3, ncol = 20)
+coefs_3
 
-ses_1_d3
-ses_1_d3 = unlist(ses_1_d3)
-ses_1_d3 = matrix(ses_1_d3, ncol = 8)
-ses_1_d3
+ses_3
+ses_3 = unlist(ses_3)
+ses_3 = matrix(ses_3, ncol = 20)
+ses_3
 
-coefs_1_d4 = list()
-ses_1_d4 = list()
-for(i in 1:length(impute_tlc_target_within_results_t1_d4)){
-  coefs_1_d4[[i]] = impute_tlc_target_within_results_t1_d4[[i]]$coefficients[2,1]
-  ses_1_d4[[i]] = impute_tlc_target_within_results_t1_d4[[i]]$coefficients[2,2]
+coefs_4 = list()
+ses_4 = list()
+for(i in 1:length(impute_tlc_between_results_4)){
+  coefs_4[[i]] = impute_tlc_between_results_4[[i]]$coefficients[2:3,1]
+  ses_4[[i]] = impute_tlc_between_results_4[[i]]$coefficients[2:3,2]
 }
-coefs_1_d4
-coefs_1_d4 = unlist(coefs_1_d4)
-coefs_1_d4 = matrix(coefs_1_d4, ncol = 8)
-coefs_1_d4
+coefs_4
+coefs_4 = unlist(coefs_4)
+coefs_4 = matrix(coefs_4, ncol = 20)
+coefs_4
 
-ses_1_d4
-ses_1_d4 = unlist(ses_1_d4)
-ses_1_d4 = matrix(ses_1_d4, ncol = 8)
-ses_1_d4
+ses_4
+ses_4 = unlist(ses_4)
+ses_4 = matrix(ses_4, ncol = 20)
+ses_4
 
-
-coefs_1_d5 = list()
-ses_1_d5 = list()
-for(i in 1:length(impute_tlc_target_within_results_t1_d5)){
-  coefs_1_d5[[i]] = impute_tlc_target_within_results_t1_d5[[i]]$coefficients[2,1]
-  ses_1_d5[[i]] = impute_tlc_target_within_results_t1_d5[[i]]$coefficients[2,2]
+coefs_5 = list()
+ses_5 = list()
+for(i in 1:length(impute_tlc_between_results_5)){
+  coefs_5[[i]] = impute_tlc_between_results_5[[i]]$coefficients[2:3,1]
+  ses_5[[i]] = impute_tlc_between_results_5[[i]]$coefficients[2:3,2]
 }
-coefs_1_d5
-coefs_1_d5 = unlist(coefs_1_d5)
-coefs_1_d5 = matrix(coefs_1_d5, ncol = 8)
-coefs_1_d5
-
-ses_1_d5
-ses_1_d5 = unlist(ses_1_d5)
-ses_1_d5 = matrix(ses_1_d5, ncol = 8)
-ses_1_d5
-
-
-########## Combine all data
-coefs_1_all = rbind(coefs_1_d1, coefs_1_d2, coefs_1_d3, coefs_1_d4, coefs_1_d5)
-ses_1_all = rbind(ses_1_d1, ses_1_d2, ses_1_d3, ses_1_d4, ses_1_d5)
-
-coefs_1_ses =  mi.meld(coefs_1_all,ses_1_all)
-t_stats_1 = coefs_1_ses$q.mi / coefs_1_ses$se.mi
-t_stats_1
-#p-value
-p_values_1 = round(2*pt(-abs(t_stats_1), df = dim(impute_dat_loop_t1[[1]])[1]-3),3)
-p_values_1
-#Critical t
-critical_ts_1= abs(qt(0.017/2, dim(impute_dat_loop_t1[[1]])[1]-3))
-critical_ts_1
-
-#95 CI's
-upper_1 = round(coefs_1_ses$q.mi+(critical_ts_1*coefs_1_ses$se.mi),3)
-lower_1 = round(coefs_1_ses$q.mi-(critical_ts_1*coefs_1_ses$se.mi),3)
-ci_95_1 = paste0(lower_1, sep=",", upper_1)
-
-tlc_target_within_results_t1 = data.frame(t(coefs_1_ses$q.mi), t(coefs_1_ses$se.mi), t(p_values_1), ci_95_1)
-colnames(tlc_target_within_results_t1) = c("par_estimate", "se", "p_value", "ci_95")
-tlc_target_within_results_t1[,1:2] = round(tlc_target_within_results_t1[,1:2], 3)
-tlc_target_within_results_t1$par_estimate = ifelse(tlc_target_within_results_t1$p_value < .017, paste0(tlc_target_within_results_t1$par_estimate, "*"), tlc_target_within_results_t1$par_estimate)
-
-tlc_target_within_results_t1$p_value = ifelse(tlc_target_within_results_t1$p_value < .0009, "<.001", tlc_target_within_results_t1$p_value)
-tlc_target_within_results_t1
-
-
-####### T2 within
-impute_tlc_target_within_results_t2 = list()
-for(i in 1:length(impute_dat_loop_t2)){
-  impute_tlc_target_within_results_t2[[i]]=lm(cbind(RAS_1_diff, RAS_2_diff,RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SIS_1_diff, SSMI_diff) ~ target, data = impute_dat_loop_t2[[i]])
-}
-
-impute_tlc_target_within_results_t2_d1 = summary(impute_tlc_target_within_results_t2[[1]])
-impute_tlc_target_within_results_t2_d2 = summary(impute_tlc_target_within_results_t2[[2]])
-impute_tlc_target_within_results_t2_d3 = summary(impute_tlc_target_within_results_t2[[3]])
-impute_tlc_target_within_results_t2_d4 = summary(impute_tlc_target_within_results_t2[[4]])
-impute_tlc_target_within_results_t2_d5 = summary(impute_tlc_target_within_results_t2[[5]])
-
-impute_tlc_target_within_results_t2_d1
-
-coefs_2_d1 = list()
-ses_2_d1 = list()
-
-
-for(i in 1:length(impute_tlc_target_within_results_t2_d1)){
-  coefs_2_d1[[i]] = impute_tlc_target_within_results_t2_d1[[i]]$coefficients[2,1]
-  ses_2_d1[[i]] = impute_tlc_target_within_results_t2_d1[[i]]$coefficients[2,2]
-}
-coefs_2_d1
-coefs_2_d1 = unlist(coefs_2_d1)
-coefs_2_d1 = matrix(coefs_2_d1, ncol = 8)
-coefs_2_d1
-
-ses_2_d1
-ses_2_d1 = unlist(ses_2_d1)
-ses_2_d1 = matrix(ses_2_d1, ncol = 8)
-ses_2_d1
-
-coefs_2_d2 = list()
-ses_2_d2 = list()
-for(i in 1:length(impute_tlc_target_within_results_t2_d2)){
-  coefs_2_d2[[i]] = impute_tlc_target_within_results_t2_d2[[i]]$coefficients[2,1]
-  ses_2_d2[[i]] = impute_tlc_target_within_results_t2_d2[[i]]$coefficients[2,2]
-}
-coefs_2_d2
-coefs_2_d2 = unlist(coefs_2_d2)
-coefs_2_d2 = matrix(coefs_2_d2, ncol = 8)
-coefs_2_d2
-
-ses_2_d2
-ses_2_d2 = unlist(ses_2_d2)
-ses_2_d2 = matrix(ses_2_d2, ncol = 8)
-ses_2_d2
-
-
-coefs_2_d3 = list()
-ses_2_d3 = list()
-for(i in 1:length(impute_tlc_target_within_results_t2_d3)){
-  coefs_2_d3[[i]] = impute_tlc_target_within_results_t2_d3[[i]]$coefficients[2,1]
-  ses_2_d3[[i]] = impute_tlc_target_within_results_t2_d3[[i]]$coefficients[2,2]
-}
-coefs_2_d3
-coefs_2_d3 = unlist(coefs_2_d3)
-coefs_2_d3 = matrix(coefs_2_d3, ncol = 8)
-coefs_2_d3
-
-ses_2_d3
-ses_2_d3 = unlist(ses_2_d3)
-ses_2_d3 = matrix(ses_2_d3, ncol = 8)
-ses_2_d3
-
-coefs_2_d4 = list()
-ses_2_d4 = list()
-for(i in 1:length(impute_tlc_target_within_results_t2_d4)){
-  coefs_2_d4[[i]] = impute_tlc_target_within_results_t2_d4[[i]]$coefficients[2,1]
-  ses_2_d4[[i]] = impute_tlc_target_within_results_t2_d4[[i]]$coefficients[2,2]
-}
-coefs_2_d4
-coefs_2_d4 = unlist(coefs_2_d4)
-coefs_2_d4 = matrix(coefs_2_d4, ncol = 8)
-coefs_2_d4
-
-ses_2_d4
-ses_2_d4 = unlist(ses_2_d4)
-ses_2_d4 = matrix(ses_2_d4, ncol = 8)
-ses_2_d4
-
-
-coefs_2_d5 = list()
-ses_2_d5 = list()
-for(i in 1:length(impute_tlc_target_within_results_t2_d5)){
-  coefs_2_d5[[i]] = impute_tlc_target_within_results_t2_d5[[i]]$coefficients[2,1]
-  ses_2_d5[[i]] = impute_tlc_target_within_results_t2_d5[[i]]$coefficients[2,2]
-}
-coefs_2_d5
-coefs_2_d5 = unlist(coefs_2_d5)
-coefs_2_d5 = matrix(coefs_2_d5, ncol = 8)
-coefs_2_d5
-
-ses_2_d5
-ses_2_d5 = unlist(ses_2_d5)
-ses_2_d5 = matrix(ses_2_d5, ncol = 8)
-ses_2_d5
-
-
-########## Combine all data
-coefs_2_all = rbind(coefs_2_d1, coefs_2_d2, coefs_2_d3, coefs_2_d4, coefs_2_d5)
-ses_2_all = rbind(ses_2_d1, ses_2_d2, ses_2_d3, ses_2_d4, ses_2_d5)
-
-coefs_2_ses =  mi.meld(coefs_2_all,ses_2_all)
-t_stats_2 = coefs_2_ses$q.mi / coefs_2_ses$se.mi
-t_stats_2
-#p-value
-p_values_2 = round(2*pt(-abs(t_stats_2), df = dim(impute_dat_loop_t2[[1]])[1]-3),3)
-p_values_2
-#Critical t
-critical_ts_2= abs(qt(0.017/2, dim(impute_dat_loop_t2[[1]])[1]-3))
-critical_ts_2
-
-#95 CI's
-upper_2 = round(coefs_2_ses$q.mi+(critical_ts_2*coefs_2_ses$se.mi),3)
-lower_2 = round(coefs_2_ses$q.mi-(critical_ts_2*coefs_2_ses$se.mi),3)
-ci_95_2 = paste0(lower_2, sep=",", upper_2)
-
-tlc_target_within_results_t2 = data.frame(t(coefs_2_ses$q.mi), t(coefs_2_ses$se.mi), t(p_values_2), ci_95_2)
-colnames(tlc_target_within_results_t2) = c("par_estimate", "se", "p_value", "ci_95")
-tlc_target_within_results_t2[,1:2] = round(tlc_target_within_results_t2[,1:2], 3)
-tlc_target_within_results_t2$par_estimate = ifelse(tlc_target_within_results_t2$p_value < .017, paste0(tlc_target_within_results_t2$par_estimate, "*"), tlc_target_within_results_t2$par_estimate)
-
-tlc_target_within_results_t2$p_value = ifelse(tlc_target_within_results_t2$p_value < .0009, "<.001", tlc_target_within_results_t2$p_value)
-tlc_target_within_results_t2
-
-########## T3 within
-impute_tlc_target_within_results_t3 = list()
-for(i in 1:length(impute_dat_loop_t3)){
-  impute_tlc_target_within_results_t3[[i]]=lm(cbind(RAS_1_diff, RAS_3_diff,RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SIS_1_diff, SSMI_diff) ~ target, data = impute_dat_loop_t3[[i]])
-}
-
-impute_tlc_target_within_results_t3_d1 = summary(impute_tlc_target_within_results_t3[[1]])
-impute_tlc_target_within_results_t3_d2 = summary(impute_tlc_target_within_results_t3[[2]])
-impute_tlc_target_within_results_t3_d3 = summary(impute_tlc_target_within_results_t3[[3]])
-impute_tlc_target_within_results_t3_d4 = summary(impute_tlc_target_within_results_t3[[4]])
-impute_tlc_target_within_results_t3_d5 = summary(impute_tlc_target_within_results_t3[[5]])
-
-impute_tlc_target_within_results_t3_d1
-
-coefs_3_d1 = list()
-ses_3_d1 = list()
-
-
-for(i in 1:length(impute_tlc_target_within_results_t3_d1)){
-  coefs_3_d1[[i]] = impute_tlc_target_within_results_t3_d1[[i]]$coefficients[2,1]
-  ses_3_d1[[i]] = impute_tlc_target_within_results_t3_d1[[i]]$coefficients[2,2]
-}
-coefs_3_d1
-coefs_3_d1 = unlist(coefs_3_d1)
-coefs_3_d1 = matrix(coefs_3_d1, ncol = 8)
-coefs_3_d1
-
-ses_3_d1
-ses_3_d1 = unlist(ses_3_d1)
-ses_3_d1 = matrix(ses_3_d1, ncol = 8)
-ses_3_d1
-
-coefs_3_d2 = list()
-ses_3_d2 = list()
-for(i in 1:length(impute_tlc_target_within_results_t3_d2)){
-  coefs_3_d2[[i]] = impute_tlc_target_within_results_t3_d2[[i]]$coefficients[2,1]
-  ses_3_d2[[i]] = impute_tlc_target_within_results_t3_d2[[i]]$coefficients[2,2]
-}
-coefs_3_d2
-coefs_3_d2 = unlist(coefs_3_d2)
-coefs_3_d2 = matrix(coefs_3_d2, ncol = 8)
-coefs_3_d2
-
-ses_3_d2
-ses_3_d2 = unlist(ses_3_d2)
-ses_3_d2 = matrix(ses_3_d2, ncol = 8)
-ses_3_d2
-
-
-coefs_3_d3 = list()
-ses_3_d3 = list()
-for(i in 1:length(impute_tlc_target_within_results_t3_d3)){
-  coefs_3_d3[[i]] = impute_tlc_target_within_results_t3_d3[[i]]$coefficients[2,1]
-  ses_3_d3[[i]] = impute_tlc_target_within_results_t3_d3[[i]]$coefficients[2,2]
-}
-coefs_3_d3
-coefs_3_d3 = unlist(coefs_3_d3)
-coefs_3_d3 = matrix(coefs_3_d3, ncol = 8)
-coefs_3_d3
-
-ses_3_d3
-ses_3_d3 = unlist(ses_3_d3)
-ses_3_d3 = matrix(ses_3_d3, ncol = 8)
-ses_3_d3
-
-coefs_3_d4 = list()
-ses_3_d4 = list()
-for(i in 1:length(impute_tlc_target_within_results_t3_d4)){
-  coefs_3_d4[[i]] = impute_tlc_target_within_results_t3_d4[[i]]$coefficients[2,1]
-  ses_3_d4[[i]] = impute_tlc_target_within_results_t3_d4[[i]]$coefficients[2,2]
-}
-coefs_3_d4
-coefs_3_d4 = unlist(coefs_3_d4)
-coefs_3_d4 = matrix(coefs_3_d4, ncol = 8)
-coefs_3_d4
-
-ses_3_d4
-ses_3_d4 = unlist(ses_3_d4)
-ses_3_d4 = matrix(ses_3_d4, ncol = 8)
-ses_3_d4
-
-
-coefs_3_d5 = list()
-ses_3_d5 = list()
-for(i in 1:length(impute_tlc_target_within_results_t3_d5)){
-  coefs_3_d5[[i]] = impute_tlc_target_within_results_t3_d5[[i]]$coefficients[2,1]
-  ses_3_d5[[i]] = impute_tlc_target_within_results_t3_d5[[i]]$coefficients[2,2]
-}
-coefs_3_d5
-coefs_3_d5 = unlist(coefs_3_d5)
-coefs_3_d5 = matrix(coefs_3_d5, ncol = 8)
-coefs_3_d5
-
-ses_3_d5
-ses_3_d5 = unlist(ses_3_d5)
-ses_3_d5 = matrix(ses_3_d5, ncol = 8)
-ses_3_d5
-
-
-########## Combine all data
-coefs_3_all = rbind(coefs_3_d1, coefs_3_d2, coefs_3_d3, coefs_3_d4, coefs_3_d5)
-ses_3_all = rbind(ses_3_d1, ses_3_d2, ses_3_d3, ses_3_d4, ses_3_d5)
-
-coefs_3_ses =  mi.meld(coefs_3_all,ses_3_all)
-t_stats_3 = coefs_3_ses$q.mi / coefs_3_ses$se.mi
-t_stats_3
-#p-value
-p_values_3 = round(2*pt(-abs(t_stats_3), df = dim(impute_dat_loop_t3[[1]])[1]-3),3)
-p_values_3
-#Critical t
-critical_ts_3= abs(qt(0.017/2, dim(impute_dat_loop_t3[[1]])[1]-3))
-critical_ts_3
-
-#95 CI's
-upper_3 = round(coefs_3_ses$q.mi+(critical_ts_3*coefs_3_ses$se.mi),3)
-lower_3 = round(coefs_3_ses$q.mi-(critical_ts_3*coefs_3_ses$se.mi),3)
-ci_95_3 = paste0(lower_3, sep=",", upper_3)
-
-tlc_target_within_results_t3 = data.frame(t(coefs_3_ses$q.mi), t(coefs_3_ses$se.mi), t(p_values_3), ci_95_3)
-colnames(tlc_target_within_results_t3) = c("par_estimate", "se", "p_value", "ci_95")
-tlc_target_within_results_t3[,1:2] = round(tlc_target_within_results_t3[,1:2], 3)
-tlc_target_within_results_t3$par_estimate = ifelse(tlc_target_within_results_t3$p_value < .017, paste0(tlc_target_within_results_t3$par_estimate, "*"), tlc_target_within_results_t3$par_estimate)
-
-tlc_target_within_results_t3$p_value = ifelse(tlc_target_within_results_t3$p_value < .0009, "<.001", tlc_target_within_results_t3$p_value)
-tlc_target_within_results_t3
-
-### Combine all results
-tlc_target_within_results_all = rbind(tlc_target_within_results_t1, tlc_target_within_results_t2, tlc_target_within_results_t3)
-tlc_target_within_results_all
-```
-###########################
-Between tlc target analysis
-###########################
-```{r}
-impute_tlc_target_between_results = list()
-for(i in 1:length(out_diff_dat)){
-  impute_tlc_target_between_results[[i]]=lm(cbind(RAS_1_diff, RAS_2_diff,RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SIS_1_diff, SSMI_diff) ~ target*factor(treatment), data = out_diff_dat[[i]])
-}
-impute_tlc_target_between_results[[1]]
-impute_tlc_target_between_results_d1 = summary(impute_tlc_target_between_results[[1]])
-impute_tlc_target_between_results_d2 = summary(impute_tlc_target_between_results[[2]])
-impute_tlc_target_between_results_d3 = summary(impute_tlc_target_between_results[[3]])
-impute_tlc_target_between_results_d4 = summary(impute_tlc_target_between_results[[4]])
-impute_tlc_target_between_results_d5 = summary(impute_tlc_target_between_results[[5]])
-impute_tlc_target_between_results_d1
-
-impute_tlc_target_between_results_d1[[1]]$coefficients[5:6,1]
-
-coefs_d1 = list()
-ses_d1 = list()
-for(i in 1:length(impute_tlc_target_between_results_d1)){
-  coefs_d1[[i]] = impute_tlc_target_between_results_d1[[i]]$coefficients[5:6,1]
-  ses_d1[[i]] = impute_tlc_target_between_results_d1[[i]]$coefficients[5:6,2]
-}
-
-coefs_d1 = unlist(coefs_d1)
-coefs_d1 = matrix(coefs_d1, ncol = 2, byrow =TRUE)  
-coefs_d1_t1vt2 = coefs_d1[,1]
-coefs_d1_t1vt3 = coefs_d1[,2]
-t(coefs_d1_t1vt3)
-ses_d1 = unlist(ses_d1)
-ses_d1 = matrix(ses_d1, ncol = 2, byrow =TRUE)  
-ses_d1_t1vt2 = ses_d1[,1]
-ses_d1_t1vt3 = ses_d1[,1]
-
-### D2
-coefs_d2 = list()
-ses_d2 = list()
-for(i in 1:length(impute_tlc_target_between_results_d2)){
-  coefs_d2[[i]] = impute_tlc_target_between_results_d2[[i]]$coefficients[5:6,1]
-  ses_d2[[i]] = impute_tlc_target_between_results_d2[[i]]$coefficients[5:6,2]
-}
-
-
-coefs_d2 = unlist(coefs_d2)
-coefs_d2 = matrix(coefs_d2, ncol = 2, byrow =TRUE)  
-coefs_d2_t1vt2 = coefs_d2[,1]
-coefs_d2_t1vt3 = coefs_d2[,2]
-t(coefs_d2_t1vt3)
-ses_d2 = unlist(ses_d2)
-ses_d2 = matrix(ses_d2, ncol = 2, byrow =TRUE)  
-ses_d2_t1vt2 = ses_d2[,1]
-ses_d2_t1vt3 = ses_d2[,1]
-
-
-### D3
-coefs_d3 = list()
-ses_d3 = list()
-for(i in 1:length(impute_tlc_target_between_results_d3)){
-  coefs_d3[[i]] = impute_tlc_target_between_results_d3[[i]]$coefficients[5:6,1]
-  ses_d3[[i]] = impute_tlc_target_between_results_d3[[i]]$coefficients[5:6,2]
-}
-
-
-coefs_d3 = unlist(coefs_d3)
-coefs_d3 = matrix(coefs_d3, ncol = 2, byrow =TRUE)  
-coefs_d3_t1vt2 = coefs_d3[,1]
-coefs_d3_t1vt3 = coefs_d3[,2]
-t(coefs_d3_t1vt3)
-ses_d3 = unlist(ses_d3)
-ses_d3 = matrix(ses_d3, ncol = 2, byrow =TRUE)  
-ses_d3_t1vt2 = ses_d3[,1]
-ses_d3_t1vt3 = ses_d3[,1]
-
-
-
-coefs_d4 = list()
-ses_d4 = list()
-for(i in 1:length(impute_tlc_target_between_results_d4)){
-  coefs_d4[[i]] = impute_tlc_target_between_results_d4[[i]]$coefficients[5:6,1]
-  ses_d4[[i]] = impute_tlc_target_between_results_d4[[i]]$coefficients[5:6,2]
-}
-
-
-coefs_d4 = unlist(coefs_d4)
-coefs_d4 = matrix(coefs_d4, ncol = 2, byrow =TRUE)  
-coefs_d4_t1vt2 = coefs_d4[,1]
-coefs_d4_t1vt3 = coefs_d4[,2]
-t(coefs_d4_t1vt3)
-ses_d4 = unlist(ses_d4)
-ses_d4 = matrix(ses_d4, ncol = 2, byrow =TRUE)  
-ses_d4_t1vt2 = ses_d4[,1]
-ses_d4_t1vt3 = ses_d4[,1]
-
-coefs_d5 = list()
-ses_d5 = list()
-for(i in 1:length(impute_tlc_target_between_results_d5)){
-  coefs_d5[[i]] = impute_tlc_target_between_results_d5[[i]]$coefficients[5:6,1]
-  ses_d5[[i]] = impute_tlc_target_between_results_d5[[i]]$coefficients[5:6,2]
-}
-impute_tlc_target_between_results_d1
-coefs_d5 = unlist(coefs_d5)
-coefs_d5 = matrix(coefs_d5, ncol = 2, byrow =TRUE)  
-coefs_d5_t1vt2 = coefs_d5[,1]
-coefs_d5_t1vt3 = coefs_d5[,2]
-t(coefs_d5_t1vt3)
-ses_d5 = unlist(ses_d5)
-ses_d5 = matrix(ses_d5, ncol = 2, byrow =TRUE)  
-ses_d5_t1vt2 = ses_d5[,1]
-ses_d5_t1vt3 = ses_d5[,1]
-
-
-coefs_all_t1vt2 = rbind(t(coefs_d1_t1vt2), t(coefs_d2_t1vt2), t(coefs_d3_t1vt2), t(coefs_d4_t1vt2), t(coefs_d5_t1vt2))
-coefs_all_t1vt3 = rbind(t(coefs_d1_t1vt3), t(coefs_d2_t1vt3), t(coefs_d3_t1vt3), t(coefs_d4_t1vt3), t(coefs_d5_t1vt3))
-coefs_all_t1vt2
-
-ses_all_t1vt2 = rbind(t(ses_d1_t1vt2), t(ses_d2_t1vt2), t(ses_d3_t1vt2), t(ses_d4_t1vt2), t(ses_d5_t1vt2))
-ses_all_t1vt3 = rbind(t(ses_d1_t1vt3), t(ses_d2_t1vt3), t(ses_d3_t1vt3), t(ses_d4_t1vt3), t(ses_d5_t1vt3))
-
-
-coefs_ses_t1vt2 =  mi.meld(coefs_all_t1vt2,ses_all_t1vt2)
-coefs_ses_t1vt3 =  mi.meld(coefs_all_t1vt3,ses_all_t1vt3)
-
-coefs_ses_t1vt2 = unlist(coefs_ses_t1vt2)
-coefs_ses_t1vt2 = matrix(coefs_ses_t1vt2, ncol = 2)
-coefs_ses_t1vt2
-
-coefs_ses_t1vt3 = unlist(coefs_ses_t1vt3)
-coefs_ses_t1vt3 = matrix(coefs_ses_t1vt3, ncol = 2)
-coefs_ses_t1vt3
-
-coefs_ses = rbind(coefs_ses_t1vt2, coefs_ses_t1vt3)
-colnames(coefs_ses) = c("q.mi", "se.mi") 
-coefs_ses = data.frame(coefs_ses)
-coefs_ses
+coefs_5
+coefs_5 = unlist(coefs_5)
+coefs_5 = matrix(coefs_5, ncol = 20)
+coefs_5
+
+ses_5
+ses_5 = unlist(ses_5)
+ses_5 = matrix(ses_5, ncol = 20)
+ses_5
+
+coefs_all = rbind(coefs_1, coefs_2, coefs_3, coefs_4, coefs_5)
+ses_all = rbind(ses_1, ses_2, ses_3, ses_4, ses_5)
+coefs_ses =  mi.meld(coefs_all,ses_all)
 t_stats = coefs_ses$q.mi / coefs_ses$se.mi
-# n - minus 5 for parameters
-p_values = round(2*pt(-abs(t_stats), df = dim(out_diff_dat[[1]])[1]-5),3)
-#Critical t
-critical_ts= abs(qt(0.017/2, df = dim(out_diff_dat[[1]])[1]-5)) 
+# n = 206 minus 5 for parameters
+p_values = round(2*pt(-abs(t_stats), df = 201),3)
+#Critica t
+critical_ts= abs(qt(0.05/2, 201))
 critical_ts
 upper = round(coefs_ses$q.mi+(critical_ts*coefs_ses$se.mi),3)
 lower = round(coefs_ses$q.mi-(critical_ts*coefs_ses$se.mi),3)
 ci_95 = paste0(lower, sep=",", upper)
 
-tlc_target_between_impute_results = data.frame( par_estimate = coefs_ses$q.mi, se = coefs_ses$se.mi, p_values, ci_95)
-tlc_target_between_impute_results[,1:2] = round(tlc_target_between_impute_results[,1:2], 3)
-tlc_target_between_impute_results
-
-tlc_target_between_impute_results$par_estimate = ifelse(tlc_target_between_impute_results$p_value < .017, paste0(tlc_target_between_impute_results$par_estimate, "*"), tlc_target_between_impute_results$par_estimate)
-tlc_target_between_impute_results
+tlc_between_impute_results = data.frame(t(coefs_ses$q.mi), t(coefs_ses$se.mi), t(p_values), ci_95)
+colnames(tlc_between_impute_results) = c("parameter_estimate", "se", "p_value", "ci_95")
+tlc_between_impute_results[,1:2] = round(tlc_between_impute_results[,1:2], 3)
+tlc_between_impute_results$parameter_estimate = ifelse(tlc_between_impute_results$p_value < .05, paste0(tlc_between_impute_results$parameter_estimate, "*"), tlc_between_impute_results$parameter_estimate)
+tlc_between_impute_results
+write.csv(tlc_between_impute_results, "tlc_between_impute_results.csv", row.names = FALSE)
 
 ```
-########## 
-Get contrasts
-###########
+############################
+Between TLC Contrasts
+###########################
 ```{r}
+#### Get contrasts
 se_con_between_d1 = list()
 mean_con_bewteen_d1 = list()
-for(i in 1:length(impute_tlc_target_between_results_d1)){
-  se_con_between_d1[[i]] = vcov(impute_tlc_target_between_results_d1[[i]])
-  se_con_between_d1[[i]] = sqrt((se_con_between_d1[[i]][5,5]+se_con_between_d1[[i]][6,6])-2*se_con_between_d1[[i]][6,5])
+for(i in 1:length(impute_tlc_between_results_1)){
+  se_con_between_d1[[i]] = vcov(impute_tlc_between_results_1[[i]])
+  se_con_between_d1[[i]] = sqrt((se_con_between_d1[[i]][,2:3][2]+se_con_between_d1[[i]][,2:3][6])-2*se_con_between_d1[[i]][,2:3][3])
   ## Now get difference
-  mean_con_bewteen_d1[[i]] = impute_tlc_target_between_results_d1[[i]]$coefficients[5]-impute_tlc_target_between_results_d1[[i]]$coefficients[6]
-}
+  mean_con_bewteen_d1[[i]] = impute_tlc_between_results_1[[i]]$coefficients[2:3,1]
+ }
 mean_con_bewteen_d1 = unlist(mean_con_bewteen_d1)
-mean_con_bewteen_d1 = t(mean_con_bewteen_d1)
-mean_con_bewteen_d1
-
+mean_con_bewteen_d1 = matrix(mean_con_bewteen_d1, ncol= 2, byrow = TRUE)
+mean_con_bewteen_d1 = mean_con_bewteen_d1[,1] - mean_con_bewteen_d1[,2]
 se_con_between_d1 = unlist(se_con_between_d1)
-se_con_between_d1 = t(se_con_between_d1)
-se_con_between_d1
 
-#### Test that se is right
-test_tlc_target_con_dat = out_diff_dat[[1]]
-test_tlc_target_con_model = lm(RAS_1_diff ~ factor(treatment)*target, data = test_tlc_target_con_dat)
-test_tlc_target_con_model
-K = matrix(c(0, 0,0,0,1,-1), ncol = 6, nrow = 1, byrow = TRUE)
-t= glht(test_tlc_target_con_model, linfct = K)
-summary(t)
-
+#### D2
 se_con_between_d2 = list()
 mean_con_bewteen_d2 = list()
-for(i in 1:length(impute_tlc_target_between_results_d2)){
-  se_con_between_d2[[i]] = vcov(impute_tlc_target_between_results_d2[[i]])
-  se_con_between_d2[[i]] = sqrt((se_con_between_d2[[i]][5,5]+se_con_between_d2[[i]][6,6])-2*se_con_between_d2[[i]][6,5])
+for(i in 1:length(impute_tlc_between_results_2)){
+  se_con_between_d2[[i]] = vcov(impute_tlc_between_results_2[[i]])
+  se_con_between_d2[[i]] = sqrt((se_con_between_d2[[i]][,2:3][2]+se_con_between_d2[[i]][,2:3][6])-2*se_con_between_d2[[i]][,2:3][3])
   ## Now get difference
-  mean_con_bewteen_d2[[i]] = impute_tlc_target_between_results_d2[[i]]$coefficients[5]-impute_tlc_target_between_results_d2[[i]]$coefficients[6]
+  mean_con_bewteen_d2[[i]] = impute_tlc_between_results_2[[i]]$coefficients[2:3,1]
 }
 mean_con_bewteen_d2 = unlist(mean_con_bewteen_d2)
-mean_con_bewteen_d2 = t(mean_con_bewteen_d2)
-mean_con_bewteen_d2
-
+mean_con_bewteen_d2 = matrix(mean_con_bewteen_d2, ncol= 2, byrow = TRUE)
+mean_con_bewteen_d2 = mean_con_bewteen_d2[,1] - mean_con_bewteen_d2[,2]
 se_con_between_d2 = unlist(se_con_between_d2)
-se_con_between_d2 = t(se_con_between_d2)
-se_con_between_d2
 
-se_con_between_d2 = list()
-mean_con_bewteen_d2 = list()
-for(i in 1:length(impute_tlc_target_between_results_d2)){
-  se_con_between_d2[[i]] = vcov(impute_tlc_target_between_results_d2[[i]])
-  se_con_between_d2[[i]] = sqrt((se_con_between_d2[[i]][5,5]+se_con_between_d2[[i]][6,6])-2*se_con_between_d2[[i]][6,5])
-  ## Now get difference
-  mean_con_bewteen_d2[[i]] = impute_tlc_target_between_results_d2[[i]]$coefficients[5]-impute_tlc_target_between_results_d2[[i]]$coefficients[6]
-}
-mean_con_bewteen_d2 = unlist(mean_con_bewteen_d2)
-mean_con_bewteen_d2 = t(mean_con_bewteen_d2)
-mean_con_bewteen_d2
-
-se_con_between_d2 = unlist(se_con_between_d2)
-se_con_between_d2 = t(se_con_between_d2)
-se_con_between_d2
-
+#### D3
 se_con_between_d3 = list()
 mean_con_bewteen_d3 = list()
-for(i in 1:length(impute_tlc_target_between_results_d3)){
-  se_con_between_d3[[i]] = vcov(impute_tlc_target_between_results_d3[[i]])
-  se_con_between_d3[[i]] = sqrt((se_con_between_d3[[i]][5,5]+se_con_between_d3[[i]][6,6])-2*se_con_between_d3[[i]][6,5])
+for(i in 1:length(impute_tlc_between_results_3)){
+  se_con_between_d3[[i]] = vcov(impute_tlc_between_results_3[[i]])
+  se_con_between_d3[[i]] = sqrt((se_con_between_d3[[i]][,2:3][2]+se_con_between_d3[[i]][,2:3][6])-2*se_con_between_d3[[i]][,2:3][3])
   ## Now get difference
-  mean_con_bewteen_d3[[i]] = impute_tlc_target_between_results_d3[[i]]$coefficients[5]-impute_tlc_target_between_results_d3[[i]]$coefficients[6]
+  mean_con_bewteen_d3[[i]] = impute_tlc_between_results_3[[i]]$coefficients[2:3,1]
 }
 mean_con_bewteen_d3 = unlist(mean_con_bewteen_d3)
-mean_con_bewteen_d3 = t(mean_con_bewteen_d3)
-mean_con_bewteen_d3
-
+mean_con_bewteen_d3 = matrix(mean_con_bewteen_d3, ncol= 2, byrow = TRUE)
+mean_con_bewteen_d3 = mean_con_bewteen_d3[,1] - mean_con_bewteen_d3[,2]
 se_con_between_d3 = unlist(se_con_between_d3)
-se_con_between_d3 = t(se_con_between_d3)
-se_con_between_d3
 
+#### D4
 se_con_between_d4 = list()
 mean_con_bewteen_d4 = list()
-for(i in 1:length(impute_tlc_target_between_results_d4)){
-  se_con_between_d4[[i]] = vcov(impute_tlc_target_between_results_d4[[i]])
-  se_con_between_d4[[i]] = sqrt((se_con_between_d4[[i]][5,5]+se_con_between_d4[[i]][6,6])-2*se_con_between_d4[[i]][6,5])
+for(i in 1:length(impute_tlc_between_results_4)){
+  se_con_between_d4[[i]] = vcov(impute_tlc_between_results_4[[i]])
+  se_con_between_d4[[i]] = sqrt((se_con_between_d4[[i]][,2:3][2]+se_con_between_d4[[i]][,2:3][6])-2*se_con_between_d4[[i]][,2:3][3])
   ## Now get difference
-  mean_con_bewteen_d4[[i]] = impute_tlc_target_between_results_d4[[i]]$coefficients[5]-impute_tlc_target_between_results_d4[[i]]$coefficients[6]
+  mean_con_bewteen_d4[[i]] = impute_tlc_between_results_4[[i]]$coefficients[2:3,1]
 }
 mean_con_bewteen_d4 = unlist(mean_con_bewteen_d4)
-mean_con_bewteen_d4 = t(mean_con_bewteen_d4)
-mean_con_bewteen_d4
-
+mean_con_bewteen_d4 = matrix(mean_con_bewteen_d4, ncol= 2, byrow = TRUE)
+mean_con_bewteen_d4 = mean_con_bewteen_d4[,1] - mean_con_bewteen_d4[,2]
 se_con_between_d4 = unlist(se_con_between_d4)
-se_con_between_d4 = t(se_con_between_d4)
-se_con_between_d4
 
+#### D5
 se_con_between_d5 = list()
 mean_con_bewteen_d5 = list()
-for(i in 1:length(impute_tlc_target_between_results_d5)){
-  se_con_between_d5[[i]] = vcov(impute_tlc_target_between_results_d5[[i]])
-  se_con_between_d5[[i]] = sqrt((se_con_between_d5[[i]][5,5]+se_con_between_d5[[i]][6,6])-2*se_con_between_d5[[i]][6,5])
+for(i in 1:length(impute_tlc_between_results_5)){
+  se_con_between_d5[[i]] = vcov(impute_tlc_between_results_5[[i]])
+  se_con_between_d5[[i]] = sqrt((se_con_between_d5[[i]][,2:3][2]+se_con_between_d5[[i]][,2:3][6])-2*se_con_between_d5[[i]][,2:3][3])
   ## Now get difference
-  mean_con_bewteen_d5[[i]] = impute_tlc_target_between_results_d5[[i]]$coefficients[5]-impute_tlc_target_between_results_d5[[i]]$coefficients[6]
+  mean_con_bewteen_d5[[i]] = impute_tlc_between_results_5[[i]]$coefficients[2:3,1]
 }
 mean_con_bewteen_d5 = unlist(mean_con_bewteen_d5)
-mean_con_bewteen_d5 = t(mean_con_bewteen_d5)
-mean_con_bewteen_d5
-
+mean_con_bewteen_d5 = matrix(mean_con_bewteen_d5, ncol= 2, byrow = TRUE)
+mean_con_bewteen_d5 = mean_con_bewteen_d5[,1] - mean_con_bewteen_d5[,2]
 se_con_between_d5 = unlist(se_con_between_d5)
-se_con_between_d5 = t(se_con_between_d5)
-se_con_between_d5
 
-est_con = rbind(mean_con_bewteen_d1, mean_con_bewteen_d2, mean_con_bewteen_d3, mean_con_bewteen_d4, mean_con_bewteen_d5)
+### Now combine means and se for mind melding
+mean_con_bewteen = rbind(mean_con_bewteen_d1, mean_con_bewteen_d2, mean_con_bewteen_d3, mean_con_bewteen_d4, mean_con_bewteen_d5)
+se_con_between = rbind(se_con_between_d1, se_con_between_d2, se_con_between_d3, se_con_between_d4, se_con_between_d5)
 
-se_con = rbind(se_con_between_d1, se_con_between_d2, se_con_between_d3, se_con_between_d4, se_con_between_d5)
+con_bewteen = mi.meld(mean_con_bewteen, se_con_between)
+con_bewteen
 
-con_between = mi.meld(est_con, se_con)
+con_between = mi.meld(mean_con_bewteen, se_con_between)
 con_between
-
-critical_t = abs(qt(0.017/2, dim(out_diff_dat[[1]])[[1]]-5))
+critical_t = abs(qt(0.05/2, dim(impute_dat_loop[[1]])[[1]]-5))
 est_con = data.frame(est_con  = con_between$q.mi)
 se_con = data.frame(se_con = con_between$se.mi)
 est_se_con = data.frame(est_con = t(est_con), se_con = t(se_con))
@@ -1105,14 +968,460 @@ upper = round(est_se_con$est_con +(critical_t*est_se_con$se_con),3)
 upper
 lower = round(est_se_con$est_con -(critical_t*est_se_con$se_con),3)
 lower
-ci_95 = paste0(lower, sep =",", upper)
+ci_95 = paste0(upper, sep =",", lower)
 ci_95
 est_se_con$ci_95 = ci_95
 est_se_con
-est_se_con$est_con = ifelse(est_se_con$p_values < .017, paste0(est_se_con$est_con, "*"), est_se_con$est_con)
+est_se_con$est_con = ifelse(est_se_con$p_values < .05, paste0(est_se_con$est_con, "*"), est_se_con$est_con)
 est_se_con$est_con
 est_se_con
+write.csv(est_se_con, "est_se_con.csv")
+
+library(multcomp)
+### Check that first is correct
+test_tlc_con_dat = out_diff_dat[[1]]
+test_tlc_con_model = lm(RAS_1_diff ~ factor(TXPackageAssigned), data = test_tlc_con_dat)
+test_tlc_con_model
+K = matrix(c(0, 1,-1), ncol = 3, nrow = 1, byrow = TRUE)
+t= glht(test_tlc_con_model, linfct = K)
+summary(t)
+
+
 
 ```
 
 
+
+
+Try testing whether the inclusion of HoursPsychotherapy, CurrentlyEngaged makes a difference
+
+•	What program/contextual factors are associated with which outcomes?
+```{r}
+describe(outcomes_freq_stand)
+tlc_complete_t1 = subset(tlc_complete, TXPackageAssigned === 1)
+cor(tlc_complete_t1[,7:12])
+outcomes_t1 = tlc_complete_t1[,13:22]
+
+results_t1 = list()
+for(i in 1:length(outcomes_t1)){
+  results_t1[[i]] = summary(stan_glm(outcomes_t1[[i]] ~ HoursPsychotherapy  + Attend75Referrals+ CrisisPlan80Time, data = tlc_complete_t1))
+}
+
+results_t1
+
+tlc_complete_t2 = subset(tlc_complete, TXPackageAssigned === 2)
+outcomes_t2 = tlc_complete_t2[,13:22]
+describe(outcomes_t2)
+
+results_t2 = list()
+for(i in 1:length(outcomes_t2)){
+  results_t2[[i]] = summary(stan_glm(outcomes_t2[[i]] ~ HoursPsychotherapy  + Attend75Referrals+  CrisisPlan80Time, data = tlc_complete_t2))
+}
+results_t2
+
+tlc_complete_t3 = subset(tlc_complete, TXPackageAssigned === 3)
+outcomes_t3 = tlc_complete_t3[,13:22]
+
+results_t3 = list()
+for(i in 1:length(outcomes_t3)){
+  results_t3[[i]] = summary(stan_glm(outcomes_t3[[i]] ~ HoursPsychotherapy  + Attend75Referrals+    CrisisPlan80Time, data = tlc_complete_t3))
+}
+results_t3
+
+```
+Try testing whether the inclusion of demos makes a difference
+
+•	What individual factors were associated with outcomes, including race/ethnicity/sexual identity (sexual orientation/gender identity)?
+```{r}
+tlc_complete_t1 = subset(tlc_complete, TXPackageAssigned === 1)
+cor(tlc_complete_t1[,7:12])
+outcomes_t1 = tlc_complete_t1[,13:22]
+#Age, Gender (female), RaceEthnicity (non-white), SexualOrientation (sexual minor)
+tlc_complete_t1$Gender = ifelse(tlc_complete_t1$Gender == 1, 0,1)
+tlc_complete_t1$RaceEthnicity = ifelse(tlc_complete_t1$RaceEthnicity == 3, 0,1)
+tlc_complete_t1$SexualOrientation = ifelse(tlc_complete_t1$SexualOrientation == 5,0,1)
+
+head(tlc_complete_t1)
+
+results_t1 = list()
+model_t1 = list()
+for(i in 1:length(outcomes_t1)){
+  model_t1[[i]] = summary(stan_glm(outcomes_t1[[i]] ~ Age+ Gender +RaceEthnicity + SexualOrientation, data = tlc_complete_t1))
+}
+
+results_t1
+
+tlc_complete_t2 = subset(tlc_complete, TXPackageAssigned === 2)
+outcomes_t2 = tlc_complete_t2[,13:22]
+describe(outcomes_t2)
+tlc_complete_t2$Gender = ifelse(tlc_complete_t2$Gender == 1, 0,1)
+tlc_complete_t2$RaceEthnicity = ifelse(tlc_complete_t2$RaceEthnicity == 3, 0,1)
+tlc_complete_t2$SexualOrientation = ifelse(tlc_complete_t2$SexualOrientation == 5,0,1)
+
+results_t2 = list()
+for(i in 1:length(outcomes_t2)){
+  results_t2[[i]] = summary(stan_glm(outcomes_t2[[i]] ~ Age+ Gender +RaceEthnicity + SexualOrientation, data = tlc_complete_t2))
+}
+results_t2
+
+tlc_complete_t3 = subset(tlc_complete, TXPackageAssigned === 3)
+outcomes_t3 = tlc_complete_t3[,13:22]
+tlc_complete_t3$Gender = ifelse(tlc_complete_t3$Gender == 1, 0,1)
+tlc_complete_t3$RaceEthnicity = ifelse(tlc_complete_t3$RaceEthnicity == 3, 0,1)
+tlc_complete_t3$SexualOrientation = ifelse(tlc_complete_t3$SexualOrientation == 5,0,1)
+
+results_t3 = list()
+for(i in 1:length(outcomes_t3)){
+  results_t3[[i]] = summary(stan_glm(outcomes_t3[[i]] ~Age+ Gender +RaceEthnicity + SexualOrientation, data = tlc_complete_t3))
+}
+results_t3
+```
+
+•	Does effectiveness of the program intervention vary according to clinical risk presentation (e.g., suicide risk score, history of past attempts)? 
+
+```{r}
+tlc_complete_t1 = subset(tlc_complete, TXPackageAssigned === 1)
+outcomes_t1 = tlc_complete_t1[,13:22]
+
+head(tlc_complete_t1)
+
+results_t1 = list()
+for(i in 1:length(outcomes_t1)){
+  results_t1[[i]] = summary(stan_glm(outcomes_t1[[i]] ~ PHQ9_b, data = tlc_complete_t1))
+}
+
+results_t1
+
+tlc_complete_t2 = subset(tlc_complete, TXPackageAssigned === 2)
+outcomes_t2 = tlc_complete_t2[,13:22]
+
+results_t2 = list()
+for(i in 1:length(outcomes_t2)){
+  results_t2[[i]] = summary(stan_glm(outcomes_t2[[i]] ~PHQ9_b, data = tlc_complete_t2))
+}
+results_t2
+
+tlc_complete_t3 = subset(tlc_complete, TXPackageAssigned === 3)
+outcomes_t3 = tlc_complete_t3[,13:22]
+
+results_t3 = list()
+for(i in 1:length(outcomes_t3)){
+  results_t3[[i]] = summary(stan_glm(outcomes_t3[[i]] ~PHQ9_b, data = tlc_complete_t3))
+}
+results_t3
+
+```
+
+
+Pyschometrics
+Test confirmatory factor because we have support that should be one factor
+Then do invar and see if related to any factors that you included
+
+See Hirschfeld(2014) for details
+```{r}
+head(tlc_data_analysis)
+INQ_b_average = tlc_data_analysis[,29:40]
+INQ_b_average$ID = 1:dim(INQ_b_average)[1]
+## Create a variable without any missing data
+library(caret)
+inTrain = createDataPartition(y = INQ_b_average$ID, p = .50, list = FALSE)
+efa_b_inq = INQ_b_average[inTrain,]
+cfa_b_inq = INQ_b_average[-inTrain,]
+efa_b_inq$ID = NULL
+cfa_b_inq$ID = NULL
+INQ_b_average$ID = NULL
+
+library(psych)
+efa_b_1 = fa(r = efa_b_inq, nfactors = 1, fm = "gls")
+efa_b_2 = fa(r = efa_b_inq, nfactors = 2, fm = "gls")
+efa_b_3 = fa(r = efa_b_inq, nfactors = 3, fm = "gls")
+
+anova(efa_b_1, efa_b_2)
+anova(efa_b_2, efa_b_3)
+fa.diagram(efa_b_2)
+fa.diagram(efa_b_3)
+
+####
+vss(efa_b_inq)
+###
+library(paran)
+efa_b_inq_complete = na.omit(efa_b_inq)
+paran(efa_b_inq_complete, centile = 95, iterations = 1000, graph = TRUE, cfa = TRUE)
+
+### Try CFA
+
+model_1  ='INQ12 =~ INQ1_B + INQ2_B + INQ3_B + INQ4_B + INQ5_B + INQ6_B + INQ7_B + INQ8_B + INQ9_B+ INQ10_B + INQ10_B + INQ11_B + INQ12_B'
+
+library(lavaan)
+fit_1 = cfa(model_1, estimator = "MLR", missing = "ML", data = cfa_b_inq)
+summary(fit_1, fit.measures = TRUE, standardized = TRUE)
+
+model_2  ='INQ12_1 =~ INQ1_B + INQ2_B + INQ3_B + INQ4_B + INQ5_B + INQ6_B
+          INQ12_2 =~ INQ7_B + INQ8_B + INQ9_B+ INQ10_B + INQ10_B + INQ11_B + INQ12_B'
+
+fit_2 = cfa(model_2, estimator = "MLR", missing = "ML", data = cfa_b_inq)
+summary(fit_2, fit.measures = TRUE, standardized = TRUE)
+
+### Measurement invariance at base for everything besides time 
+library(semTools)
+
+model_2  ='INQ12_1 =~ INQ1_B + INQ2_B + INQ3_B + INQ4_B + INQ5_B + INQ6_B
+          INQ12_2 =~ INQ7_B + INQ8_B + INQ9_B+ INQ10_B + INQ10_B + INQ11_B + INQ12_B'
+head(tlc_data_analysis)
+measure_invar = tlc_data_analysis
+head(measure_invar)
+measure_invar$HispanicLatino = ifelse(measure_invar$HispanicLatino == 2, NA, measure_invar$HispanicLatino)
+describe.factor(measure_invar$HispanicLatino)
+describe.factor(measure_invar$RaceEthnicity)
+### Non-white versus white
+measure_invar$RaceEthnicity = ifelse(measure_invar$RaceEthnicity != 3, 0, 1)
+describe.factor(measure_invar$Version)
+###sexual minority versus sexual majority
+describe.factor(measure_invar$SexualOrientation)
+measure_invar$SexualOrientation = ifelse(measure_invar$SexualOrientation != 5, 0,1)
+measure_invar$Age = as.numeric(measure_invar$Age)
+## Greater than the average age so "older" youth
+measure_invar$Age = ifelse(measure_invar$Age > mean(measure_invar$Age, na.rm = TRUE), 1, 0)
+#female
+measure_invar$Gender = ifelse(measure_invar$Gender == 1, 0, 1)
+
+measure_invar_config = list()
+measure_invar_weak = list()
+measure_invar_strong = list()
+measure_invar_strict = list()
+anova_results = list()
+measure_invar_names = names(measure_invar)[3:8]
+for(i in 1:length(measure_invar_names)){
+ measure_invar_config[[i]]= cfa(model_2, data = measure_invar, group = measure_invar_names[[i]], estimator = "MLR", missing = "ML")
+ measure_invar_weak[[i]]= cfa(model_2, data = measure_invar, group = measure_invar_names[[i]], estimator = "MLR", missing = "ML", group.equal="loadings")
+ measure_invar_strong[[i]]= cfa(model_2, data = measure_invar, group = measure_invar_names[[i]], estimator = "MLR", missing = "ML", group.equal=c("loadings", "intercepts"))
+ measure_invar_strict[[i]]= cfa(model_2, data = measure_invar, group = measure_invar_names[[i]], estimator = "MLR", missing = "ML", group.equal=c("loadings", "intercepts", "residuals"))
+ anova_results[[i]] = anova(measure_invar_config[[i]], measure_invar_weak[[i]], measure_invar_strong[[i]], measure_invar_strict[[i]])
+}
+anova_results
+
+
+```
+Concurrent and predictive with suicideal ideation
+Get all three measures into total scores and then one data set
+```{r}
+con_pred = data.frame(INQ_b_1_average, INQ_b_2_average, SIS_b_1_average, SIS_b_2_average, SIS_d_1_average, SIS_d_2_average)
+head(con_pred)
+library(Hmisc)
+con_pred
+rcorr(as.matrix(con_pred), type = "spearman")
+cor(con_pred)
+```
+
+Get Measurement invar over time
+Get later too much brain power
+```{r}
+INQ_b_1 = tlc_data_analysis[,29:34]
+INQ_b_1$id = rep(0, dim(INQ_b_1)[1])
+
+INQ_b_2 = tlc_data_analysis[,35:40]
+INQ_b_2 = 8-INQ_b_2
+INQ_b_2$id = rep(0, dim(INQ_b_2)[1])
+
+INQ_d_1 = tlc_data_analysis[,73:78]
+INQ_d_1$id = rep(1, dim(INQ_d_1)[1])
+
+INQ_d_2 = tlc_data_analysis[,79:84]
+INQ_d_2 = 8-INQ_d_2
+INQ_d_2$id = rep(1, dim(INQ_d_2)[1])
+
+## Change names to be the same then rbind
+colnames(INQ_d_1) = colnames(INQ_b_1)
+colnames(INQ_d_2) = colnames(INQ_b_2)
+
+INQ_b_d_1 = rbind(INQ_b_1, INQ_d_1)
+INQ_b_d_2 = rbind(INQ_b_2, INQ_d_2)
+INQ_b_d = cbind(INQ_b_d_1, INQ_b_d_2)
+INQ_b_d
+```
+Now invar with time
+```{r}
+measure_invar_config = list()
+measure_invar_weak = list()
+measure_invar_strong = list()
+measure_invar_strict = list()
+anova_results = list()
+library(lavaan)
+
+model_2  ='INQ12_1 =~ INQ1_B + INQ2_B + INQ3_B + INQ4_B + INQ5_B + INQ6_B
+          INQ12_2 =~ INQ7_B + INQ8_B + INQ9_B+ INQ10_B + INQ10_B + INQ11_B + INQ12_B'
+
+
+measure_invar_names = names(INQ_b_d)[14]
+for(i in 1:length(measure_invar_names)){
+ measure_invar_config[[i]]= cfa(model_2, data = INQ_b_d[,1:13], group = measure_invar_names[[i]], estimator = "MLR", missing = "ML")
+ measure_invar_weak[[i]]= cfa(model_2, data = INQ_b_d[,1:13], group = measure_invar_names[[i]], estimator = "MLR", missing = "ML", group.equal="loadings")
+ measure_invar_strong[[i]]= cfa(model_2, data = INQ_b_d[,1:13], group = measure_invar_names[[i]], estimator = "MLR", missing = "ML", group.equal=c("loadings", "intercepts"))
+ measure_invar_strict[[i]]= cfa(model_2, data = INQ_b_d[,1:13], group = measure_invar_names[[i]], estimator = "MLR", missing = "ML", group.equal=c("loadings", "intercepts", "residuals"))
+ anova_results[[i]] = anova(measure_invar_config[[i]], measure_invar_weak[[i]], measure_invar_strong[[i]], measure_invar_strict[[i]])
+}
+anova_results
+
+```
+
+
+
+
+
+RAS psycho
+```{r}
+head(tlc_data_analysis)
+RAS_b_average = tlc_data_analysis[,9:28]
+RAS_b_average$ID = 1:dim(RAS_b_average)[1]
+## Create a variable without any missing data
+library(caret)
+inTrain = createDataPartition(y = RAS_b_average$ID, p = .50, list = FALSE)
+efa_b_RAS = RAS_b_average[inTrain,]
+cfa_b_RAS = RAS_b_average[-inTrain,]
+efa_b_RAS$ID = NULL
+cfa_b_RAS$ID = NULL
+RAS_b_average$ID = NULL
+
+library(psych)
+efa_b_1 = fa(r = efa_b_RAS, nfactors = 1, fm = "gls")
+efa_b_2 = fa(r = efa_b_RAS, nfactors = 2, fm = "gls")
+efa_b_3 = fa(r = efa_b_RAS, nfactors = 3, fm = "gls")
+efa_b_4 = fa(r = efa_b_RAS, nfactors = 4, fm = "gls")
+efa_b_5 = fa(r = efa_b_RAS, nfactors = 5, fm = "gls")
+
+
+anova(efa_b_1, efa_b_2)
+anova(efa_b_2, efa_b_3)
+anova(efa_b_3, efa_b_4)
+anova(efa_b_4, efa_b_5)
+
+fa.diagram(efa_b_5)
+
+####
+vss(efa_b_RAS)
+###
+library(paran)
+efa_b_RAS_complete = na.omit(efa_b_RAS)
+paran(efa_b_RAS_complete, centile = 95, iterations = 1000, graph = TRUE, cfa = TRUE)
+
+
+### Try CFA
+#f = 6, g = 7, h = 8, I = 9,  j = 10, k = 11, l = 12, m = 13, t = 20
+#q=17,r=18,s=19
+#a,b,c,d,e
+#n=14,o=15,p=16
+
+
+model_1  ='RAS_1_B =~ RAS6_B + RAS7_B + RAS8_B + RAS9_B + RAS10_B + RAS11_B + RAS12_B + RAS13_B + RAS20_B
+RAS_2_B =~  RAS17_B + RAS18_B + RAS19_B
+RAS_3_B =~ RAS1_B + RAS2_B + RAS3_B + RAS4_B + RAS5_B
+RAS_4_B =~ RAS14_B + RAS15_B + RAS16_B '
+
+library(lavaan)
+fit_1 = cfa(model_1, estimator = "MLR", missing = "ML", data = cfa_b_RAS)
+summary(fit_1, fit.measures = TRUE, standardized = TRUE)
+```
+SSMI Pyscho Not bad
+```{r}
+head(tlc_data_analysis)
+SSMI_b_average = tlc_data_analysis[,41:45]
+SSMI_b_average$ID = 1:dim(SSMI_b_average)[1]
+## Create a variable without any missing data
+library(caret)
+inTrain = createDataPartition(y = SSMI_b_average$ID, p = .50, list = FALSE)
+efa_b_SSMI = SSMI_b_average[inTrain,]
+cfa_b_SSMI = SSMI_b_average[-inTrain,]
+efa_b_SSMI$ID = NULL
+cfa_b_SSMI$ID = NULL
+SSMI_b_average$ID = NULL
+
+library(psych)
+efa_b_1 = fa(r = efa_b_SSMI, nfactors = 1, fm = "gls")
+efa_b_2 = fa(r = efa_b_SSMI, nfactors = 2, fm = "gls")
+efa_b_3 = fa(r = efa_b_SSMI, nfactors = 3, fm = "gls")
+
+anova(efa_b_1, efa_b_2)
+anova(efa_b_2, efa_b_3)
+fa.diagram(efa_b_2)
+
+####
+vss(efa_b_SSMI)
+###
+library(paran)
+efa_b_SSMI_complete = na.omit(efa_b_SSMI)
+paran(efa_b_SSMI_complete, centile = 95, iterations = 1000, graph = TRUE, cfa = TRUE)
+
+
+### Try CFA
+
+model_1  ='SSMI_B =~ SSMI1_B + SSMI2_B + SSMI3_B + SSMI4_B + SSMI5_B'
+
+library(lavaan)
+fit_1 = cfa(model_1, estimator = "MLR", missing = "ML", data = cfa_b_SSMI)
+summary(fit_1, fit.measures = TRUE, standardized = TRUE)
+```
+SIS Excellent
+```{r}
+head(tlc_data_analysis)
+SIS_b_average = tlc_data_analysis[,46:52]
+SIS_b_average$ID = 1:dim(SIS_b_average)[1]
+## Create a variable without any missing data
+library(caret)
+inTrain = createDataPartition(y = SIS_b_average$ID, p = .50, list = FALSE)
+efa_b_SIS = SIS_b_average[inTrain,]
+cfa_b_SIS = SIS_b_average[-inTrain,]
+efa_b_SIS$ID = NULL
+cfa_b_SIS$ID = NULL
+SIS_b_average$ID = NULL
+
+library(psych)
+efa_b_1 = fa(r = efa_b_SIS, nfactors = 1, fm = "gls")
+efa_b_2 = fa(r = efa_b_SIS, nfactors = 2, fm = "gls")
+efa_b_3 = fa(r = efa_b_SIS, nfactors = 3, fm = "gls")
+
+anova(efa_b_1, efa_b_2)
+anova(efa_b_2, efa_b_3)
+fa.diagram(efa_b_2)
+
+####
+vss(efa_b_SIS)
+###
+library(paran)
+efa_b_SIS_complete = na.omit(efa_b_SIS)
+paran(efa_b_SIS_complete, centile = 95, iterations = 1000, graph = TRUE, cfa = TRUE)
+
+
+### Try CFA
+
+model_1  ='SIS_1_B =~ SIS1_B + SIS2_B + SIS3_B + SIS4_B
+          SIS_2_B =~ + SIS5_B + SIS6_B + SIS7_B'
+
+library(lavaan)
+fit_1 = cfa(model_1, estimator = "MLR", missing = "ML", data = cfa_b_SIS)
+summary(fit_1, fit.measures = TRUE, standardized = TRUE)
+```
+
+
+Get reliability for two factors, test-retest 
+```{r}
+inq12_b_fac1 = tlc_data_analysis[,29:34]
+inq12_b_fac1_mean = apply(inq12_b_fac1, 1, mean, na.rm = TRUE)
+inq12_b_fac2 = tlc_data_analysis[,35:40]
+inq12_b_fac2_mean = apply(inq12_b_fac2, 1, mean, na.rm = TRUE)
+
+
+inq12_d_fac1 = tlc_data_analysis[,73:78]
+inq12_d_fac1_mean = apply(inq12_d_fac1, 1, mean, na.rm = TRUE)
+inq12_d_fac2 = tlc_data_analysis[,79:84]
+inq12_d_fac2_mean = apply(inq12_d_fac2, 1, mean, na.rm = TRUE)
+
+summary(omega(inq12_b_fac1))
+summary(omega(inq12_b_fac2))
+
+
+hist(inq12_b_fac1_mean)
+qqnorm(inq12_b_fac1_mean)
+
+cor.test(inq12_b_fac1_mean, inq12_d_fac1_mean, method = "kendall")
+cor.test(inq12_b_fac2_mean, inq12_d_fac2_mean, method = "kendall")
+```

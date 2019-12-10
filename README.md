@@ -142,10 +142,15 @@ PHQ9_diff = tlc_data_analysis$PHQ9_4 - tlc_data_analysis$PHQ9_1
 #apply(tlc_data_analysis, 2, function(x){describe.factor(x)})
 tlc_data_analysis_average = data.frame(tlc_data_analysis[,c(1,2,4:8, 99:104)], RAS_b_1_average, RAS_b_2_average, RAS_b_3_average, RAS_b_5_average, INQ_b_1_average, INQ_b_2_average, SSMI_b_average, SIS_b_1_average, SIS_b_2_average, PHQ9_b = tlc_data_analysis$PHQ9_1,RAS_d_1_average, RAS_d_2_average, RAS_d_3_average, RAS_d_5_average, INQ_d_1_average, INQ_d_2_average, SSMI_d_average, SIS_d_1_average, SIS_d_2_average,PHQ9_d = tlc_data_analysis$PHQ9_4)
 
-head(tlc_data_analysis_average)
 
-tlc_data_analysis_average
-tlc_data_analysis_average[,8:13] = NULL
+### Get rid of missing treatments
+tlc_data_analysis_average$treat_missing = is.na(tlc_data_analysis_average$TXPackageAssigned)
+tlc_data_analysis_average = subset(tlc_data_analysis_average, treat_missing == FALSE)
+dim(tlc_data_analysis_average)
+tlc_data_analysis_average$treat_missing = NULL
+
+### Get rid of EHR vars and PHQ
+tlc_data_analysis_average[,c(8:13, 23,33)] = NULL
 
 ```
 ######################

@@ -326,6 +326,7 @@ employed = ifelse(datAdult$Employment == 2, 1, ifelse(datAdult$Employment == 3, 
 ### treatment
 treatment =  datAdult$Treatment
 describe.factor(treatment)
+treatment = recode(treatment, "B " = "2")
 ########## 
 # Put together Target dat set
 #################
@@ -376,19 +377,6 @@ Now get quasi imputed data set
 ```{r}
 ############ Review missing data
 miss_var_summary(tlc_target_dat)
-
-
-quasi_itt =  apply(tlc_target_dat, 1, function(x)(sum(is.na(x))))
-quasi_itt_dat = data.frame(tlc_target_dat,quasi_itt)
-describe.factor(quasi_itt_dat$quasi_itt)
-### Ten variables and threshold is less than 50% 
-dim(quasi_itt_dat)[2]/2
-quasi_itt_dat = subset(quasi_itt_dat, quasi_itt < dim(quasi_itt_dat)[2]/2)
-dim(tlc_target_dat)
-dim(quasi_itt_dat)
-quasi_itt_dat$quasi_itt = NULL
-dim(tlc_target_dat)
-dim(quasi_itt_dat)
 ```
 
 
@@ -397,14 +385,15 @@ Now get imputted data
 #######################
 ```{r}
 library(Amelia)
-head(quasi_itt_dat)
-sum(is.na(quasi_itt_dat))
-prop_miss_case(quasi_itt_dat)
-a.out = amelia(x=quasi_itt_dat, m = 5, noms = c("treatment", "female", "non_white", "sexual_minority"))
-summary(a.out)
-impute_dat_loop = a.out$imputations
-
-
+head(tlc_target_dat)
+#dim(tlc_target_dat)
+#sum(is.na(tlc_target_dat))
+#prop_miss_case(tlc_target_dat)
+#a.out = amelia(x=tlc_target_dat, m = 5, noms = c("treatment", "female", "non_white", "sexual_minority"))
+#summary(a.out)
+#impute_dat_loop = a.out$imputations
+#saveRDS(impute_dat_loop, file = "impute_dat_loop_tlc_target_dat.rds")
+impute_dat_loop = readRDS("impute_dat_loop_tlc_target_dat.rds")
 ```
 ##############
 Within between TLC and Target
@@ -979,6 +968,7 @@ write.csv(tlc_target_between_impute_results, "tlc_target_between_impute_results.
 Get contrasts
 ###########
 ```{r}
+library(multcomp)
 se_con_between_d1 = list()
 mean_con_bewteen_d1 = list()
 for(i in 1:length(impute_tlc_target_between_results_d1)){

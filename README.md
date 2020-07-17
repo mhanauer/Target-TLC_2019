@@ -869,10 +869,54 @@ tlc_target_within_results_all = rbind(tlc_target_within_results_t1, tlc_target_w
 tlc_target_within_results_all
 write.csv(tlc_target_within_results_all, "tlc_target_within_results_all.csv", row.names = FALSE)
 ```
+####################################
+Between TLC target complete analysis
+####################################
+```{r}
+tlc_target_dat_complete = na.omit(tlc_target_dat)
+dim(tlc_target_dat_complete)
+out_diff_dat = tlc_target_dat_complete[15:22]-tlc_target_dat_complete[7:14]
+colnames(out_diff_dat) = c("RAS_1_diff", "RAS_2_diff", "RAS_3_diff", "RAS_5_diff", "INQ_1_diff", "INQ_2_diff", "SSMI_diff", "SIS_1_diff")
+out_diff_dat = scale(out_diff_dat)
+out_diff_dat =cbind(tlc_target_dat_complete, out_diff_dat)
+out_diff_dat
+tlc_target_dat_complete_results=lm(cbind(RAS_1_diff, RAS_2_diff,RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SSMI_diff, SIS_1_diff) ~ target*factor(treatment), data = out_diff_dat)
+tlc_target_dat_complete_results
+
+tlc_target_dat_complete_results = summary(tlc_target_dat_complete_results)
+
+treat_2_3_out = list()
+for(i in 1:8){
+treat_2_3_out[[i]]= tlc_target_dat_complete_results[i][[1]][[4]][c(5,6),1]
+}
+treat_2_3_out = unlist(treat_2_3_out)
+impute_est_se_con
+treat_between_all = cbind(treat_2_3_out[,1]-treat_2_3_out[,2], treat_2_3_out)
+treat_between_all = mean(abs(unlist(treat_between_all)))
+impute_betwen_pars = matrix(impute_betwen_pars, ncol = 2, byrow = TRUE)
+treat_between_impute = cbind(impute_est_se_con, impute_betwen_pars)
+treat_between_impute = mean(abs(unlist(treat_between_impute)))
+
+diff_between_complete_impute = treat_between_all-treat_between_impute
+diff_between_complete_impute
+### Different
+mean(c(mean(10,4,5), mean(4,5,6)))
+mean(c(10,4,5,4,5,6))
+```
 ###########################
 Between tlc target analysis
 ###########################
 ```{r}
+out_diff_dat = list()
+impute_dat_loop[[1]][7:14]
+for(i in 1:length(impute_dat_loop)){
+  out_diff_dat[[i]] = impute_dat_loop[[i]][15:22]-impute_dat_loop[[i]][7:14]
+  colnames(out_diff_dat[[i]]) = c("RAS_1_diff", "RAS_2_diff", "RAS_3_diff", "RAS_5_diff", "INQ_1_diff", "INQ_2_diff", "SSMI_diff", "SIS_1_diff")
+  out_diff_dat[[i]] = scale(out_diff_dat[[i]])
+  out_diff_dat[[i]] =cbind(impute_dat_loop[[i]], out_diff_dat[[i]])
+}
+out_diff_dat[[1]]
+
 impute_tlc_target_between_results = list()
 for(i in 1:length(out_diff_dat)){
   impute_tlc_target_between_results[[i]]=lm(cbind(RAS_1_diff, RAS_2_diff,RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SSMI_diff, SIS_1_diff) ~ target*factor(treatment), data = out_diff_dat[[i]])
@@ -1017,7 +1061,7 @@ ci_95 = paste0(lower, sep=",", upper)
 tlc_target_between_impute_results = data.frame( par_estimate = coefs_ses$q.mi, se = coefs_ses$se.mi, p_values, ci_95)
 tlc_target_between_impute_results[,1:2] = round(tlc_target_between_impute_results[,1:2], 3)
 tlc_target_between_impute_results
-
+impute_betwen_pars = tlc_target_between_impute_results$par_estimate
 tlc_target_between_impute_results$par_estimate = ifelse(tlc_target_between_impute_results$p_value < .05, paste0(tlc_target_between_impute_results$par_estimate, "*"), tlc_target_between_impute_results$par_estimate)
 tlc_target_between_impute_results
 write.csv(tlc_target_between_impute_results, "tlc_target_between_impute_results.csv", row.names = FALSE)
@@ -1157,6 +1201,8 @@ ci_95 = paste0(lower, sep =",", upper)
 ci_95
 est_se_con$ci_95 = ci_95
 est_se_con
+
+impute_est_se_con = est_se_con$est_con
 est_se_con$est_con = ifelse(est_se_con$p_values < .05, paste0(est_se_con$est_con, "*"), est_se_con$est_con)
 est_se_con$est_con
 write.csv(est_se_con, "est_se_con.csv", row.names = FALSE)

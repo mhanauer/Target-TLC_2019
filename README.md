@@ -326,7 +326,7 @@ employed = ifelse(datAdult$Employment == 2, 1, ifelse(datAdult$Employment == 3, 
 ### treatment
 treatment =  datAdult$Treatment
 describe.factor(treatment)
-treatment = recode(treatment, "B " = "2")
+treatment = dplyr::recode(treatment, "B " = "2")
 ########## 
 # Put together Target dat set
 #################
@@ -389,13 +389,68 @@ head(tlc_target_dat)
 #dim(tlc_target_dat)
 #sum(is.na(tlc_target_dat))
 #prop_miss_case(tlc_target_dat)
-#a.out = amelia(x=tlc_target_dat, m = 5, noms = c("treatment", "female", "non_white", "sexual_minority"))
-#summary(a.out)
+
+
+bounds = matrix(c(7,1,5, 8,1,5, 9,1,5, 10,1,5, 11,1,7, 12,1,7, 13,1,9, 14,1,5, 15,1,5, 16,1,5, 17,1,5, 18,1,5, 19,1,7, 20,1,7, 21,1,9, 22,1,5),nrow = 16, ncol = 3, byrow = TRUE)
+
+dim(tlc_target_dat[,7:22])
+#a.out = amelia(x=tlc_target_dat, m = 5, noms = c("treatment", "female", "non_white", "sexual_minority"), bounds = bounds, idvars = "ID")
+summary(a.out)
 #impute_dat_loop = a.out$imputations
 #saveRDS(impute_dat_loop, file = "impute_dat_loop_tlc_target_dat.rds")
 setwd("P:/Evaluation/TN Lives Count_Writing/4_Target1_EnhancedCrisisFollow-up/3_Data & Data Analyses")
-impute_dat_loop = readRDS("impute_dat_loop_tlc_target_dat.rds")
+a.out = readRDS("a.out_tlc_target_7_17_20.rds")
+impute_dat_loop = a.out$imputations
+apply(impute_dat_loop[[1]], 2, range)
+compare.density(a.out, var = "RAS_d_1_average")
+compare.density(a.out, var = "RAS_d_2_average")
+compare.density(a.out, var = "RAS_d_3_average")
+compare.density(a.out, var = "RAS_d_5_average")
+compare.density(a.out, var = "RAS_d_5_average")
+compare.density(a.out, var = "INQ_d_1_average")
+compare.density(a.out, var = "INQ_d_2_average")
+compare.density(a.out, var = "SSMI_d_average")
+compare.density(a.out, var = "SIS_d_1_average")
+#INQ_d_1_average, INQ_d_2_average, SSMI_d_average, SIS_d_1_average
+
 ```
+#########################################
+Within between TLC and Target complete case analysis
+#########################################
+```{r}
+tlc_target_dat_complete = na.omit(tlc_target_dat)
+dim(tlc_target_dat_complete)
+out_diff_dat = tlc_target_dat_complete[15:22]-tlc_target_dat_complete[7:14]
+colnames(out_diff_dat) = c("RAS_1_diff", "RAS_2_diff", "RAS_3_diff", "RAS_5_diff", "INQ_1_diff", "INQ_2_diff", "SSMI_diff", "SIS_1_diff")
+out_diff_dat = scale(out_diff_dat)
+out_diff_dat =cbind(tlc_target_dat_complete, out_diff_dat)
+out_diff_dat
+#### Just need to get to the coefficients for each model in order (stack them)
+out_diff_dat
+
+tlc_target_dat_complete_t1 = subset(out_diff_dat, treatment == 1)
+tlc_target_dat_complete_t2 = subset(out_diff_dat, treatment == 2)
+tlc_target_dat_complete_t3 = subset(out_diff_dat, treatment == 3)
+tlc_target_dat_complete_list = list(tlc_target_dat_complete_t1, tlc_target_dat_complete_t2, tlc_target_dat_complete_t3)
+
+tlc_target_dat_complete_list_results = list()
+for(i in 1:length(tlc_target_dat_complete_list)){
+  tlc_target_dat_complete_list_results[[i]]=lm(cbind(RAS_1_diff, RAS_2_diff,RAS_3_diff, RAS_5_diff, INQ_1_diff, INQ_2_diff, SSMI_diff, SIS_1_diff) ~ target, data = tlc_target_dat_complete_list[[i]])
+}
+
+tlc_target_dat_complete_list_results_all = list()
+for(i in 1:length(tlc_target_dat_complete_list_results)){
+tlc_target_dat_complete_list_results_all[[i]] = tlc_target_dat_complete_list_results[[i]][[1]][2,]
+}
+tlc_target_dat_complete_list_results_all = unlist(tlc_target_dat_complete_list_results_all)
+
+#### Run impute below to get this result
+
+mean_stand_coef_complete_v_impute = mean(abs(tlc_target_dat_complete_list_results_all)) - mean(abs(impute_compare))
+```
+
+
+
 ##############
 Within between TLC and Target
 So regression with stand diff score and target at indicator
@@ -411,6 +466,8 @@ for(i in 1:length(impute_dat_loop)){
   out_diff_dat[[i]] =cbind(impute_dat_loop[[i]], out_diff_dat[[i]])
 }
 out_diff_dat[[1]]
+
+
 
 
 ```
@@ -675,6 +732,7 @@ ci_95_2 = paste0(lower_2, sep=",", upper_2)
 tlc_target_within_results_t2 = data.frame(t(coefs_2_ses$q.mi), t(coefs_2_ses$se.mi), t(p_values_2), ci_95_2)
 colnames(tlc_target_within_results_t2) = c("par_estimate", "se", "p_value", "ci_95")
 tlc_target_within_results_t2[,1:2] = round(tlc_target_within_results_t2[,1:2], 3)
+impute_compare = tlc_target_within_results_t2$par_estimate
 tlc_target_within_results_t2$par_estimate = ifelse(tlc_target_within_results_t2$p_value < .05, paste0(tlc_target_within_results_t2$par_estimate, "*"), tlc_target_within_results_t2$par_estimate)
 
 tlc_target_within_results_t2$p_value = ifelse(tlc_target_within_results_t2$p_value < .0009, "<.001", tlc_target_within_results_t2$p_value)

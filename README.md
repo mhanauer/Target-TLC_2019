@@ -406,7 +406,6 @@ compare.density(a.out, var = "RAS_d_1_average")
 compare.density(a.out, var = "RAS_d_2_average")
 compare.density(a.out, var = "RAS_d_3_average")
 compare.density(a.out, var = "RAS_d_5_average")
-compare.density(a.out, var = "RAS_d_5_average")
 compare.density(a.out, var = "INQ_d_1_average")
 compare.density(a.out, var = "INQ_d_2_average")
 compare.density(a.out, var = "SSMI_d_average")
@@ -890,7 +889,8 @@ for(i in 1:8){
 treat_2_3_out[[i]]= tlc_target_dat_complete_results[i][[1]][[4]][c(5,6),1]
 }
 treat_2_3_out = unlist(treat_2_3_out)
-impute_est_se_con
+treat_2_3_out = matrix(treat_2_3_out, ncol = 2, byrow = TRUE)
+length(treat_2_3_out)
 treat_between_all = cbind(treat_2_3_out[,1]-treat_2_3_out[,2], treat_2_3_out)
 treat_between_all = mean(abs(unlist(treat_between_all)))
 impute_betwen_pars = matrix(impute_betwen_pars, ncol = 2, byrow = TRUE)
